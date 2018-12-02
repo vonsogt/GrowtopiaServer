@@ -2461,6 +2461,44 @@ int _tmain(int argc, _TCHAR* argv[])
 						data.plantingTree = atoi(str.substr(7, cch.length() - 7 - 1).c_str());
 						SendPacketRaw(4, packPlayerMoving(&data), 56, 0, peer, ENET_PACKET_FLAG_RELIABLE);
 					}
+					else if (str.substr(0, 6) == "/nick ") {
+					if (!isSuperAdmin(((PlayerInfo*)(peer->data))->rawName, ((PlayerInfo*)(peer->data))->tankIDPass)) break;
+					cout << ((PlayerInfo*)(peer->data))->displayName << "nicked into " << str.substr(6, cch.length() - 6 - 1) << endl;
+					sendPlayerLeave(peer, (PlayerInfo*)(event.peer->data));
+					((PlayerInfo*)(peer->data))->currentWorld = "EXIT";
+					sendWorldOffers(peer);
+
+					((PlayerInfo*)(peer->data))->displayName = str.substr(6, cch.length() - 6 - 1);
+
+					GamePacket ps = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "Your nickname has been changed!"));
+					ENetPacket * packet = enet_packet_create(ps.data,
+						ps.len,
+						ENET_PACKET_FLAG_RELIABLE);
+
+					enet_peer_send(peer, 0, packet);
+					delete ps.data;
+					//enet_host_flush(server);
+					}
+					else if (str == "/invis")
+					{
+					if (!isSuperAdmin(((PlayerInfo*)(peer->data))->rawName, ((PlayerInfo*)(peer->data))->tankIDPass)) break;
+					//string name = ((PlayerInfo*)(peer->data))->displayName;
+					((PlayerInfo*)(peer->data))->displayName = "";
+					GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "Invisible mode `2ON"));
+					ENetPacket * packet = enet_packet_create(p.data,
+						p.len,
+						ENET_PACKET_FLAG_RELIABLE);
+					enet_peer_send(peer, 0, packet);
+					delete p.data;
+					((PlayerInfo*)(event.peer->data))->canDoubleJump = true;
+					((PlayerInfo*)(event.peer->data))->canWalkInBlocks= true;
+					((PlayerInfo*)(peer->data))->cloth_face = 0;
+					sendPlayerLeave(peer, (PlayerInfo*)(event.peer->data));
+					((PlayerInfo*)(peer->data))->currentWorld = "EXIT";
+					sendWorldOffers(peer);
+					continue;
+
+					}
 					else if (str == "/help"){
 						GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "Supported commands are: /help, /mod, /unmod, /inventory, /item id, /team id, /color number, /who, /state number, /count, /sb message, /alt, /radio, /gem"));
 						ENetPacket * packet = enet_packet_create(p.data,

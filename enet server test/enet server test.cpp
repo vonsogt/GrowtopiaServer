@@ -1,7 +1,7 @@
 
 /*
 Original Source Code By Growtopia Noobs
-Added Lots by Jordan#0495
+Alot of commands added by Jordan#0495
 credit to nitespicy
 */
 

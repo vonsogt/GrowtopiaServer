@@ -1,12 +1,12 @@
+
 /*
 Original Source Code By Growtopia Noobs
-
 Added Lots by Jordan#0495
 credit to nitespicy
 */
+
 #include "stdafx.h"
 #include <iostream>
-
 #include "enet/enet.h"
 #include <string>
 #include <windows.h>
@@ -392,7 +392,7 @@ struct InventoryItem {
 
 struct PlayerInventory {
 	vector<InventoryItem> items;
-	int inventorySize = 100;
+	int inventorySize = 1000;
 };
 
 #define cloth0 cloth_hair
@@ -459,13 +459,13 @@ struct PlayerInfo {
 	bool haveSuperSupporterName = false; // 16777216
 	bool haveSupperPineapple = false; // 33554432
 	//bool 
-	int skinColor = 0x268DAFFF;
+	int skinColor = 0x8295C3FF;
 
 	PlayerInventory inventory;
 
 	long long int lastSB = 0;
 	long long int lastBC = 0;
-	long long int lastSDB = 0;
+	long long int lastVSB = 0;
 };
 
 
@@ -503,9 +503,7 @@ struct WorldInfo {
 	string name = "TEST";
 	WorldItem* items;
 	string owner = "";
-	string worldaccess = "";
-	bool isPublic = false;
-	int weather = 0;
+	bool isPublic=false;
 };
 
 WorldInfo generateWorld(string name, int width, int height)
@@ -544,10 +542,7 @@ public:
 	static string getProperName(string name);
 	static string PlayerDB::fixColors(string text);
 	static int playerLogin(ENetPeer* peer, string username, string password);
-	static int playerRegister(string username, string password, string discord);
-	//static int playerRegister(string username, string password, string passwordverify, string email, string discord);
-	;
-	//static int playerRegister(string username, string password, string passwordverify, string email, string discord, string ClothBack, string ClothHand, string ClothFace, string ClothShirt, string ClothPant, string ClothNeck, string ClothHair, string ClothFeet, string ClothMask, string Level, string block, string isBanned)
+	static int playerRegister(string username, string password);
 };
 
 string PlayerDB::getProperName(string name) {
@@ -607,7 +602,6 @@ int PlayerDB::playerLogin(ENetPeer* peer, string username, string password) {
 		if (geyban == "true") {
 			return -3;
 		}
-
 		if (verifyPassword(password, pss)) {
 			ENetPeer * currentPeer;
 
@@ -622,7 +616,7 @@ int PlayerDB::playerLogin(ENetPeer* peer, string username, string password) {
 				if (((PlayerInfo*)(currentPeer->data))->rawName == PlayerDB::getProperName(username))
 				{
 					{
-						GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "Someone else logged into this account!"));
+						GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "Someone else logged to this account!"));
 						ENetPacket * packet = enet_packet_create(p.data,
 							p.len,
 							ENET_PACKET_FLAG_RELIABLE);
@@ -630,7 +624,7 @@ int PlayerDB::playerLogin(ENetPeer* peer, string username, string password) {
 						delete p.data;
 					}
 					{
-						GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "Someone else was logged into this account! He was kicked out now."));
+						GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "Someone else was logged to this account! He was kicked out now."));
 						ENetPacket * packet = enet_packet_create(p.data,
 							p.len,
 							ENET_PACKET_FLAG_RELIABLE);
@@ -651,8 +645,8 @@ int PlayerDB::playerLogin(ENetPeer* peer, string username, string password) {
 		return -2;
 	}
 }
-//int PlayerDB::playerRegister(string username, string password, string passwordverify, string email, string discord, string ClothBack, string ClothHand, string ClothFace, string ClothShirt, string ClothPant, string ClothNeck, string ClothHair, string ClothFeet, string ClothMask, string Level, string block, string isBanned) {
-int PlayerDB::playerRegister(string username, string password, string discord) {
+
+int PlayerDB::playerRegister(string username, string password) {
 	username = PlayerDB::getProperName(username);
 	if (username.length() < 3) return -2;
 	std::ifstream ifs("players/" + username + ".json");
@@ -669,7 +663,7 @@ int PlayerDB::playerRegister(string username, string password, string discord) {
 	PlayerInfo pinfo;
 	j["username"] = username;
 	j["password"] = hashPassword(password);
-	j["discord"] = discord;
+	j["isBanned"] = "false";
 	j["adminLevel"] = 0;
 	j["ClothBack"] = 0;
 	j["ClothHand"] = 0;
@@ -683,20 +677,6 @@ int PlayerDB::playerRegister(string username, string password, string discord) {
 	o << j << std::endl;
 	return 1;
 }
-
-/*j["adminLevel"] = 0;
-j["ClothBack"] = 0;
-j["ClothHand"] = 0;
-j["ClothFace"] = 0;
-j["ClothShirt"] = 0;
-j["ClothPants"] = 0;
-j["ClothNeck"] = 0;
-j["ClothHair"] = 0;
-j["ClothFeet"] = 0;
-j["ClothMask"] = 0;
-j["Level"] = 0;
-j["block"] = 0;
-j["isBanned"] = "false";*/
 
 struct AWorld {
 	WorldInfo* ptr;
@@ -812,10 +792,9 @@ void WorldDB::flush(WorldInfo info)
 	j["height"] = info.height;
 	j["owner"] = info.owner;
 	j["isPublic"] = info.isPublic;
-	j["weather"] = info.weather;
 	json tiles = json::array();
 	int square = info.width*info.height;
-
+	
 	for (int i = 0; i < square; i++)
 	{
 		json tile;
@@ -847,8 +826,7 @@ void WorldDB::saveAll()
 	}
 	worlds.clear();
 }
-
-void setBanned(string boolean ,string username, string password, string passwordverify, string email, string discord, string ClothBack, string ClothHand, string ClothFace, string ClothShirt, string ClothPant, string ClothNeck, string ClothHair, string ClothFeet, string ClothMask, string Level, string block, string isBanned) {
+void setBanned(string boolean, string username, string password, string passwordverify, string email, string discord, string ClothBack, string ClothHand, string ClothFace, string ClothShirt, string ClothPant, string ClothNeck, string ClothHair, string ClothFeet, string ClothMask, string Level, string block, string isBanned) {
 	std::ofstream o("players/" + username + ".json");
 	if (!o.is_open()) {
 		cout << GetLastError() << endl;
@@ -908,7 +886,6 @@ void unbangay(string boolean, string username) {
 	js["isBanned"] = boolean;
 	o << js << std::endl;
 }
-
 vector<WorldInfo> WorldDB::getRandomWorlds() {
 	vector<WorldInfo> ret;
 	for (int i = 0; i < ((worlds.size() < 10) ? worlds.size() : 10); i++)
@@ -1071,7 +1048,7 @@ void craftItemDescriptions() {
 			{
 				itemDefs.at(atoi(ex[0].c_str())).description = ex[1];
 				if (!(atoi(ex[0].c_str()) % 2))
-					itemDefs.at(atoi(ex[0].c_str()) + 1).description = "This is a tree.";
+					itemDefs.at(atoi(ex[0].c_str()) + 1).description = "This is tree.";
 			}
 		}
 	}
@@ -1175,7 +1152,7 @@ struct Admin {
 	int level = 0;
 	long long int lastSB = 0;
 	long long int lastBC = 0;
-	long long int lastSDB = 0;
+	long long int lastVSB = 0;
 };
 
 vector<Admin> admins;
@@ -1230,6 +1207,66 @@ bool canClear(string username, string password) {
 bool isSuperAdmin(string username, string password) {
 	for (int i = 0; i < admins.size(); i++) {
 		Admin admin = admins[i];
+		if (admin.username == username && admin.password == password && admin.level >= 998) {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool isDev(string username, string password) {
+	for (int i = 0; i < admins.size(); i++) {
+		Admin admin = admins[i];
+		if (admin.username == username && admin.password == password && admin.level >= 999) {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool isNormalAdmin(string username, string password) {
+	for (int i = 0; i < admins.size(); i++) {
+		Admin admin = admins[i];
+		if (admin.username == username && admin.password == password && admin.level >= 2) {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool isVIP(string username, string password) {
+	for (int i = 0; i < admins.size(); i++) {
+		Admin admin = admins[i];
+		if (admin.username == username && admin.password == password && admin.level >= 0) {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool isVIPFlag(string username, string password) {
+	for (int i = 0; i < admins.size(); i++) {
+		Admin admin = admins[i];
+		if (admin.username == username && admin.password == password && admin.level == 1) {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool isNormalAdminFlag(string username, string password) {
+	for (int i = 0; i < admins.size(); i++) {
+		Admin admin = admins[i];
+		if (admin.username == username && admin.password == password && admin.level == 2) {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool isSuperAdminFlag(string username, string password) {
+	for (int i = 0; i < admins.size(); i++) {
+		Admin admin = admins[i];
 		if (admin.username == username && admin.password == password && admin.level == 999) {
 			return true;
 		}
@@ -1237,10 +1274,30 @@ bool isSuperAdmin(string username, string password) {
 	return false;
 }
 
-bool isAdmin(string username, string password) {
+bool isDevFlag(string username, string password) {
 	for (int i = 0; i < admins.size(); i++) {
 		Admin admin = admins[i];
-		if (admin.username == username && admin.password == password && admin.level >= 2) {
+		if (admin.username == username && admin.password == password && admin.level == 1000) {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool isCustomFlag1(string username, string password) {
+	for (int i = 0; i < admins.size(); i++) {
+		Admin admin = admins[i];
+		if (admin.username == username && admin.password == password && admin.level == 3) {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool isCustomFlag2(string username, string password) {
+	for (int i = 0; i < admins.size(); i++) {
+		Admin admin = admins[i];
+		if (admin.username == username && admin.password == password && admin.level == 4) {
 			return true;
 		}
 	}
@@ -1277,7 +1334,7 @@ void sendInventory(ENetPeer* peer, PlayerInventory inventory)
 		val |= inventory.items.at(i).itemCount << 16;
 		val &= 0x00FFFFFF;
 		val |= 0x00 << 24;
-		memcpy(data2 + (i*4) + (asdf2.length() / 2), &val, 4);
+		memcpy(data2 + (i * 4) + (asdf2.length() / 2), &val, 4);
 	}
 	ENetPacket * packet3 = enet_packet_create(data2,
 		packetLen,
@@ -1399,109 +1456,110 @@ void SendPacketRaw(int a1, void *packetData, size_t packetDataSize, void *a4, EN
 		}
 		
 	}
-		void sendClothes(ENetPeer* peer)
+
+	void updateAllClothes(ENetPeer* peer)
+	{
+		ENetPeer * currentPeer;
+		for (currentPeer = server->peers;
+			currentPeer < &server->peers[server->peerCount];
+			++currentPeer)
 		{
-			ENetPeer * currentPeer;
-			GamePacket p3 = packetEnd(appendFloat(appendIntx(appendFloat(appendFloat(appendFloat(appendString(createPacket(), "OnSetClothing"), ((PlayerInfo*)(peer->data))->cloth_hair, ((PlayerInfo*)(peer->data))->cloth_shirt, ((PlayerInfo*)(peer->data))->cloth_pants), ((PlayerInfo*)(peer->data))->cloth_feet, ((PlayerInfo*)(peer->data))->cloth_face, ((PlayerInfo*)(peer->data))->cloth_hand), ((PlayerInfo*)(peer->data))->cloth_back, ((PlayerInfo*)(peer->data))->cloth_mask, ((PlayerInfo*)(peer->data))->cloth_necklace), ((PlayerInfo*)(peer->data))->skinColor), 0.0f, 0.0f, 0.0f));
-			for (currentPeer = server->peers;
-				currentPeer < &server->peers[server->peerCount];
-				++currentPeer)
+			if (currentPeer->state != ENET_PEER_STATE_CONNECTED)
+				continue;
+			if (isHere(peer, currentPeer))
 			{
-				if (currentPeer->state != ENET_PEER_STATE_CONNECTED)
-					continue;
-				if (isHere(peer, currentPeer))
-				{
+				GamePacket p3 = packetEnd(appendFloat(appendIntx(appendFloat(appendFloat(appendFloat(appendString(createPacket(), "OnSetClothing"), ((PlayerInfo*)(peer->data))->cloth_hair, ((PlayerInfo*)(peer->data))->cloth_shirt, ((PlayerInfo*)(peer->data))->cloth_pants), ((PlayerInfo*)(peer->data))->cloth_feet, ((PlayerInfo*)(peer->data))->cloth_face, ((PlayerInfo*)(peer->data))->cloth_hand), ((PlayerInfo*)(peer->data))->cloth_back, ((PlayerInfo*)(peer->data))->cloth_mask, ((PlayerInfo*)(peer->data))->cloth_necklace), ((PlayerInfo*)(peer->data))->skinColor), 0.0f, 0.0f, 0.0f));
+				memcpy(p3.data + 8, &(((PlayerInfo*)(peer->data))->netID), 4); // ffloor
+				ENetPacket * packet3 = enet_packet_create(p3.data,
+					p3.len,
+					ENET_PACKET_FLAG_RELIABLE);
 
-					memcpy(p3.data + 8, &(((PlayerInfo*)(peer->data))->netID), 4); // ffloor
-					ENetPacket * packet3 = enet_packet_create(p3.data,
-						p3.len,
-						ENET_PACKET_FLAG_RELIABLE);
-
-					enet_peer_send(currentPeer, 0, packet3);
-				}
-
-			}
-
-			if (((PlayerInfo*)(peer->data))->haveGrowId) {
-
-				PlayerInfo* p = ((PlayerInfo*)(peer->data));
-
-				string username = PlayerDB::getProperName(p->rawName);
-
-				std::ifstream od("players/" + username + ".json");
-				if (od.is_open()) {
-				}
-
-				std::ofstream o("players/" + username + ".json");
-				if (!o.is_open()) {
-					cout << GetLastError() << endl;
-					_getch();
-				}
-				json j;
-
-				int clothback = p->cloth_back;
-				int clothhand = p->cloth_hand;
-				int clothface = p->cloth_face;
-				int clothhair = p->cloth_hair;
-				int clothfeet = p->cloth_feet;
-				int clothpants = p->cloth_pants;
-				int clothneck = p->cloth_necklace;
-				int clothshirt = p->cloth_shirt;
-				int clothmask = p->cloth_mask;
-
-				string password = ((PlayerInfo*)(peer->data))->tankIDPass;
-				j["username"] = username;
-				j["password"] = hashPassword(password);
-				j["adminLevel"] = 0;
-				j["ClothBack"] = clothback;
-				j["ClothHand"] = clothhand;
-				j["ClothFace"] = clothface;
-				j["ClothShirt"] = clothshirt;
-				j["ClothPants"] = clothpants;
-				j["ClothNeck"] = clothneck;
-				j["ClothHair"] = clothhair;
-				j["ClothFeet"] = clothfeet;
-				j["ClothMask"] = clothmask;
-
-
-				o << j << std::endl;
-			}
-
-			//enet_host_flush(server);
-			delete p3.data;
-		}
-		void updateAllClothes(ENetPeer* peer)
-		{
-			ENetPeer * currentPeer;
-			for (currentPeer = server->peers;
-				currentPeer < &server->peers[server->peerCount];
-				++currentPeer)
-			{
-				if (currentPeer->state != ENET_PEER_STATE_CONNECTED)
-					continue;
-				if (isHere(peer, currentPeer))
-				{
-					GamePacket p3 = packetEnd(appendFloat(appendIntx(appendFloat(appendFloat(appendFloat(appendString(createPacket(), "OnSetClothing"), ((PlayerInfo*)(peer->data))->cloth_hair, ((PlayerInfo*)(peer->data))->cloth_shirt, ((PlayerInfo*)(peer->data))->cloth_pants), ((PlayerInfo*)(peer->data))->cloth_feet, ((PlayerInfo*)(peer->data))->cloth_face, ((PlayerInfo*)(peer->data))->cloth_hand), ((PlayerInfo*)(peer->data))->cloth_back, ((PlayerInfo*)(peer->data))->cloth_mask, ((PlayerInfo*)(peer->data))->cloth_necklace), ((PlayerInfo*)(peer->data))->skinColor), 0.0f, 0.0f, 0.0f));
-					memcpy(p3.data + 8, &(((PlayerInfo*)(peer->data))->netID), 4); // ffloor
-					ENetPacket * packet3 = enet_packet_create(p3.data,
-						p3.len,
-						ENET_PACKET_FLAG_RELIABLE);
-
-					enet_peer_send(currentPeer, 0, packet3);
-					delete p3.data;
-					//enet_host_flush(server);
-					GamePacket p4 = packetEnd(appendFloat(appendIntx(appendFloat(appendFloat(appendFloat(appendString(createPacket(), "OnSetClothing"), ((PlayerInfo*)(currentPeer->data))->cloth_hair, ((PlayerInfo*)(currentPeer->data))->cloth_shirt, ((PlayerInfo*)(currentPeer->data))->cloth_pants), ((PlayerInfo*)(currentPeer->data))->cloth_feet, ((PlayerInfo*)(currentPeer->data))->cloth_face, ((PlayerInfo*)(currentPeer->data))->cloth_hand), ((PlayerInfo*)(currentPeer->data))->cloth_back, ((PlayerInfo*)(currentPeer->data))->cloth_mask, ((PlayerInfo*)(currentPeer->data))->cloth_necklace), ((PlayerInfo*)(currentPeer->data))->skinColor), 0.0f, 0.0f, 0.0f));
-					memcpy(p4.data + 8, &(((PlayerInfo*)(currentPeer->data))->netID), 4); // ffloor
-					ENetPacket * packet4 = enet_packet_create(p4.data,
-						p4.len,
-						ENET_PACKET_FLAG_RELIABLE);
-					enet_peer_send(peer, 0, packet4);
-					delete p4.data;
-					//enet_host_flush(server);
-				}
+				enet_peer_send(currentPeer, 0, packet3);
+				delete p3.data;
+				//enet_host_flush(server);
+				GamePacket p4 = packetEnd(appendFloat(appendIntx(appendFloat(appendFloat(appendFloat(appendString(createPacket(), "OnSetClothing"), ((PlayerInfo*)(currentPeer->data))->cloth_hair, ((PlayerInfo*)(currentPeer->data))->cloth_shirt, ((PlayerInfo*)(currentPeer->data))->cloth_pants), ((PlayerInfo*)(currentPeer->data))->cloth_feet, ((PlayerInfo*)(currentPeer->data))->cloth_face, ((PlayerInfo*)(currentPeer->data))->cloth_hand), ((PlayerInfo*)(currentPeer->data))->cloth_back, ((PlayerInfo*)(currentPeer->data))->cloth_mask, ((PlayerInfo*)(currentPeer->data))->cloth_necklace), ((PlayerInfo*)(currentPeer->data))->skinColor), 0.0f, 0.0f, 0.0f));
+				memcpy(p4.data + 8, &(((PlayerInfo*)(currentPeer->data))->netID), 4); // ffloor
+				ENetPacket * packet4 = enet_packet_create(p4.data,
+					p4.len,
+					ENET_PACKET_FLAG_RELIABLE);
+				enet_peer_send(peer, 0, packet4);
+				delete p4.data;
+				//enet_host_flush(server);
 			}
 		}
+	}
 
+	void sendClothes(ENetPeer* peer)
+	{
+		ENetPeer * currentPeer;
+		GamePacket p3 = packetEnd(appendFloat(appendIntx(appendFloat(appendFloat(appendFloat(appendString(createPacket(), "OnSetClothing"), ((PlayerInfo*)(peer->data))->cloth_hair, ((PlayerInfo*)(peer->data))->cloth_shirt, ((PlayerInfo*)(peer->data))->cloth_pants), ((PlayerInfo*)(peer->data))->cloth_feet, ((PlayerInfo*)(peer->data))->cloth_face, ((PlayerInfo*)(peer->data))->cloth_hand), ((PlayerInfo*)(peer->data))->cloth_back, ((PlayerInfo*)(peer->data))->cloth_mask, ((PlayerInfo*)(peer->data))->cloth_necklace), ((PlayerInfo*)(peer->data))->skinColor), 0.0f, 0.0f, 0.0f));
+		for (currentPeer = server->peers;
+			currentPeer < &server->peers[server->peerCount];
+			++currentPeer)
+		{
+			if (currentPeer->state != ENET_PEER_STATE_CONNECTED)
+				continue;
+			if (isHere(peer, currentPeer))
+			{
+
+				memcpy(p3.data + 8, &(((PlayerInfo*)(peer->data))->netID), 4); // ffloor
+				ENetPacket * packet3 = enet_packet_create(p3.data,
+					p3.len,
+					ENET_PACKET_FLAG_RELIABLE);
+
+				enet_peer_send(currentPeer, 0, packet3);
+			}
+
+		}
+
+		if (((PlayerInfo*)(peer->data))->haveGrowId) {
+
+			PlayerInfo* p = ((PlayerInfo*)(peer->data));
+
+			string username = PlayerDB::getProperName(p->rawName);
+
+			std::ifstream od("players/" + username + ".json");
+			if (od.is_open()) {
+			}
+
+			std::ofstream o("players/" + username + ".json");
+			if (!o.is_open()) {
+				cout << GetLastError() << endl;
+				_getch();
+			}
+			json j;
+
+			int clothback = p->cloth_back;
+			int clothhand = p->cloth_hand;
+			int clothface = p->cloth_face;
+			int clothhair = p->cloth_hair;
+			int clothfeet = p->cloth_feet;
+			int clothpants = p->cloth_pants;
+			int clothneck = p->cloth_necklace;
+			int clothshirt = p->cloth_shirt;
+			int clothmask = p->cloth_mask;
+
+			string password = ((PlayerInfo*)(peer->data))->tankIDPass;
+			j["username"] = username;
+			j["password"] = hashPassword(password);
+			j["adminLevel"] = 0;
+			j["ClothBack"] = clothback;
+			j["ClothHand"] = clothhand;
+			j["ClothFace"] = clothface;
+			j["ClothShirt"] = clothshirt;
+			j["ClothPants"] = clothpants;
+			j["ClothNeck"] = clothneck;
+			j["ClothHair"] = clothhair;
+			j["ClothFeet"] = clothfeet;
+			j["ClothMask"] = clothmask;
+			j["isBanned"] = "false";
+
+			o << j << std::endl;
+		}
+
+		//enet_host_flush(server);
+		delete p3.data;
+	}
 	void sendPData(ENetPeer* peer, PlayerMoving* data)
 	{
 		ENetPeer * currentPeer;
@@ -1552,22 +1610,19 @@ void SendPacketRaw(int a1, void *packetData, size_t packetDataSize, void *a4, EN
 				continue;
 			if (isHere(peer, currentPeer))
 			{
-				GamePacket p2 = packetEnd(appendIntx(appendString(appendIntx(appendString(createPacket(), "OnTalkBubble"), ((PlayerInfo*)(peer->data))->netID), "`w[" + ((PlayerInfo*)(peer->data))->displayName + " `wspun the wheel and got `6"+std::to_string(val)+"`w!]"), 0));
+				GamePacket p2 = packetEnd(appendIntx(appendString(appendIntx(appendString(createPacket(), "OnTalkBubble"), ((PlayerInfo*)(peer->data))->netID), "Your number is "+std::to_string(val)+"."), 0));
 				ENetPacket * packet2 = enet_packet_create(p2.data,
 					p2.len,
 					ENET_PACKET_FLAG_RELIABLE);
 				enet_peer_send(currentPeer, 0, packet2);
 				delete p2.data;
 			}
+				
+
 			//cout << "Tile update at: " << data2->punchX << "x" << data2->punchY << endl;
-			//if (!isSuperAdmin(((PlayerInfo*)(peer->data))->rawName, ((PlayerInfo*)(peer->data))->tankIDPass)) break;
 		}
 	}
 
-	/*void sendWParty(ENetPeer* peer, int x, int y)//OnSetCurrentWeather
-	{
-		
-	}*/
 	void sendNothingHappened(ENetPeer* peer, int x, int y) {
 		PlayerMoving data;
 		data.netID = ((PlayerInfo*)(peer->data))->netID;
@@ -1597,12 +1652,12 @@ void SendPacketRaw(int a1, void *packetData, size_t packetDataSize, void *a4, EN
 		data.YSpeed = 0;
 		data.netID = causedBy;
 		data.plantingTree = tile;
-		
+
 		WorldInfo *world = getPlyersWorld(peer);
-		
+
 		if (world == NULL) return;
 		if (x<0 || y<0 || x>world->width || y>world->height) return;
-		sendNothingHappened(peer,x,y);
+		sendNothingHappened(peer, x, y);
 		if (!isSuperAdmin(((PlayerInfo*)(peer->data))->rawName, ((PlayerInfo*)(peer->data))->tankIDPass))
 		{
 			if (world->items[x + (y*world->width)].foreground == 6 || world->items[x + (y*world->width)].foreground == 8 || world->items[x + (y*world->width)].foreground == 3760)
@@ -1616,16 +1671,15 @@ void SendPacketRaw(int a1, void *packetData, size_t packetDataSize, void *a4, EN
 				sendRoulete(peer, x, y);
 			return;
 		}
-		if (world->name != "ADMIN") {
-			if (world->owner != "") {
-
-				if (((PlayerInfo*)(peer->data))->rawName == world->owner || (((PlayerInfo*)(peer->data))->rawName == world->worldaccess || isSuperAdmin(((PlayerInfo*)(peer->data))->rawName, ((PlayerInfo*)(peer->data))->tankIDPass))) {
+		if (world->name != "ADMIN") 
+		{
+			if (world->owner != "") 
+			{
+				if (((PlayerInfo*)(peer->data))->rawName == world->owner) 
+				{
 					// WE ARE GOOD TO GO
-					if (tile == 32 && ((PlayerInfo*)(peer->data))->rawName == world->worldaccess) {
-						return;
-					}
 					if (tile == 32) {
-						GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnDialogRequest"), "set_default_color|`o\n\nadd_label_with_icon|big|`wEdit World Lock``|left|242|\nadd_label|small|`wAccess list: |left|4|\n\nadd_spacer|small|\nadd_label|small|Currently, you're the only one with access.|left|4|\nadd_spacer|small|\nadd_button||`wAdd``|0|0|\nadd_button_with_icon|worldPublic|Public|noflags|2408||\nadd_button_with_icon|worldPrivate|Private|noflags|202||\nadd_spacer|small|\nadd_quick_exit|\nadd_button|chc0|Close|noflags|0|0|\nnend_dialog|gazette||OK|"));
+						GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnDialogRequest"), "set_default_color|`o\n\nadd_label_with_icon|big|`wShould this world be publicly breakable?``|left|242|\n\nadd_spacer|small|\nadd_button_with_icon|worldPublic|Public|noflags|2408||\nadd_button_with_icon|worldPrivate|Private|noflags|202||\nadd_spacer|small|\nadd_quick_exit|\nadd_button|chc0|Close|noflags|0|0|\nnend_dialog|gazette||OK|"));
 						ENetPacket * packet = enet_packet_create(p.data,
 							p.len,
 							ENET_PACKET_FLAG_RELIABLE);
@@ -1641,15 +1695,82 @@ void SendPacketRaw(int a1, void *packetData, size_t packetDataSize, void *a4, EN
 					{
 						return;
 					}
+					if (world->items[x + (y*world->width)].foreground == 1796)
+					{
+						return;
+					}
 				}
-				else {
+				else 
+				{
 					return;
 				}
 				if (tile == 242) {
 					return;
 				}
+				if (tile == 1796) {
+					return;
+				}
+			
 			}
 		}
+		if (world->name == "TEST")
+		{
+			// WE ARE GOOD TO GO
+			if (tile == 32)
+			{
+				GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnDialogRequest"), "set_default_color|`o\n\nadd_label_with_icon|big|`9The Legendary Wizard``|left|1790|\nadd_textbox|`oGreetings, Traveler! I am the Legendary Wizard. Should to embark on a Legendary Quest, Simply choose one below.\nadd_spacer|small|\nadd_button|ltitle|Quest for Honor|noflags|0|0|\nadd_button|ldrag|Quest for Fire|noflags|0|0|\nadd_button|lbot|Quest Of Steel|noflags|0|0|\nadd_button|ltitle|Quest Of The Heavens|noflags|0|0|\nnend_dialog|gazette||OK|"));
+				ENetPacket * packet = enet_packet_create(p.data,
+					p.len,
+					ENET_PACKET_FLAG_RELIABLE);
+				enet_peer_send(peer, 0, packet);
+
+				//enet_host_flush(server);
+				delete p.data;
+			}
+		}
+		/*else if (world->name = "LEGEND")
+		{
+			if (tile == 32) 
+			{
+				GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnDialogRequest"), "set_default_color|`o\n\nadd_label_with_icon|big|`9The Legendary Wizard``|left|1790|\nadd_textbox|`oGreetings, Traveler! I am the Legendary Wizard. Should to embark on a Legendary Quest, Simply choose one below.\nadd_spacer|small|\nadd_button|ltitle|Quest for Honor|noflags|0|0|\nadd_button|ldrag|Quest for Fire|noflags|0|0|\nadd_button|lbot|Quest Of Steel|noflags|0|0|\nadd_button|ltitle|Quest Of The Heavens|noflags|0|0|\nnend_dialog|gazette||OK|"));
+				ENetPacket * packet = enet_packet_create(p.data,
+					p.len,
+					ENET_PACKET_FLAG_RELIABLE);
+				enet_peer_send(peer, 0, packet);
+
+				//enet_host_flush(server);
+				delete p.data;
+			}
+		}*/
+		/*if (world->name = "LEGEND") 
+		{
+				if (((PlayerInfo*)(peer->data))->rawName == world->owner) {
+					// WE ARE GOOD TO GO
+					if (tile == 32) {
+						GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnDialogRequest"), "set_default_color|`o\n\nadd_label_with_icon|big|`9The Legendary Wizard``|left|1790|\nadd_textbox|`oGreetings, Traveler! I am the Legendary Wizard. Should to embark on a Legendary Quest, Simply choose one below.\nadd_spacer|small|\nadd_button|ltitle|Quest for Honor|noflags|0|0|\nadd_button|ldrag|Quest for Fire|noflags|0|0|\nadd_button|lbot|Quest Of Steel|noflags|0|0|\nadd_button|ltitle|Quest Of The Heavens|noflags|0|0|\nnend_dialog|gazette||OK|"));
+						ENetPacket * packet = enet_packet_create(p.data,
+							p.len,
+							ENET_PACKET_FLAG_RELIABLE);
+						enet_peer_send(peer, 0, packet);
+
+						//enet_host_flush(server);
+						delete p.data;
+					}
+				}
+				else if (world->isPublic)
+				{
+					if (world->items[x + (y*world->width)].foreground == 1790)
+					{
+						return;
+					}
+				}
+				else {
+					return;
+				}
+				if (tile == 1790) {
+					return;
+				}
+		}*/
 		if (tile == 32) {
 			// TODO
 			return;
@@ -1700,7 +1821,7 @@ void SendPacketRaw(int a1, void *packetData, size_t packetDataSize, void *a4, EN
 					sendRoulete(peer, x, y);
 			}
 			else
-				if (y < world->height && world->items[x + (y*world->width)].breakLevel + 4 >= def.breakHits * 4) { // TODO \start level system
+				if (y < world->height && world->items[x + (y*world->width)].breakLevel + 4 >= def.breakHits * 4) { // TODO
 					data.packetType = 0x3;// 0xC; // 0xF // World::HandlePacketTileChangeRequest
 					data.netID = -1;
 					data.plantingTree = 0;
@@ -1708,6 +1829,11 @@ void SendPacketRaw(int a1, void *packetData, size_t packetDataSize, void *a4, EN
 					if (world->items[x + (y*world->width)].foreground != 0)
 					{
 						if (world->items[x + (y*world->width)].foreground == 242)
+						{
+							world->owner = "";
+							world->isPublic = false;
+						}
+						if (world->items[x + (y*world->width)].foreground == 1796)
 						{
 							world->owner = "";
 							world->isPublic = false;
@@ -1734,13 +1860,13 @@ void SendPacketRaw(int a1, void *packetData, size_t packetDataSize, void *a4, EN
 			{
 				if (((PlayerInfo*)(peer->data))->inventory.items.at(i).itemID == tile)
 				{
-					if ((unsigned int)((PlayerInfo*)(peer->data))->inventory.items.at(i).itemCount>1)
+					if ((unsigned int)((PlayerInfo*)(peer->data))->inventory.items.at(i).itemCount > 1)
 					{
 						((PlayerInfo*)(peer->data))->inventory.items.at(i).itemCount--;
 					}
 					else {
 						((PlayerInfo*)(peer->data))->inventory.items.erase(((PlayerInfo*)(peer->data))->inventory.items.begin() + i);
-						
+
 					}
 				}
 			}
@@ -1748,12 +1874,15 @@ void SendPacketRaw(int a1, void *packetData, size_t packetDataSize, void *a4, EN
 			{
 				world->items[x + (y*world->width)].background = tile;
 			}
-			else {
+			else 
+			{
 				world->items[x + (y*world->width)].foreground = tile;
-				if (tile == 242) {
+				if (tile == 242) 
+				{
 					world->owner = ((PlayerInfo*)(peer->data))->rawName;
 					world->isPublic = false;
 					ENetPeer * currentPeer;
+
 					for (currentPeer = server->peers;
 						currentPeer < &server->peers[server->peerCount];
 						++currentPeer)
@@ -1770,130 +1899,12 @@ void SendPacketRaw(int a1, void *packetData, size_t packetDataSize, void *a4, EN
 						}
 					}
 				}
-				else if (tile == 1796) {
+				else if (tile == 1796)
+				{
 					world->owner = ((PlayerInfo*)(peer->data))->rawName;
 					world->isPublic = false;
 					ENetPeer * currentPeer;
-					for (currentPeer = server->peers;
-						currentPeer < &server->peers[server->peerCount];
-						++currentPeer)
-					{
-						if (currentPeer->state != ENET_PEER_STATE_CONNECTED)
-							continue;
-						if (isHere(peer, currentPeer)) {
-							GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "`3[`w" + world->name + " `ohas been World Locked by `2" + ((PlayerInfo*)(peer->data))->displayName + "`3]"));
-							ENetPacket * packet = enet_packet_create(p.data,
-								p.len,
-								ENET_PACKET_FLAG_RELIABLE);
-							enet_peer_send(currentPeer, 0, packet);
-							delete p.data;
-						}
-					}
-				}
-				else if (tile == 5814) {
-					world->owner = ((PlayerInfo*)(peer->data))->rawName;
-					world->isPublic = false;
-					ENetPeer * currentPeer;
-					for (currentPeer = server->peers;
-						currentPeer < &server->peers[server->peerCount];
-						++currentPeer)
-					{
-						if (currentPeer->state != ENET_PEER_STATE_CONNECTED)
-							continue;
-						if (isHere(peer, currentPeer)) {
-							GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "`3[`w" + world->name + " `ohas been World Locked by `2" + ((PlayerInfo*)(peer->data))->displayName + "`3]"));
-							ENetPacket * packet = enet_packet_create(p.data,
-								p.len,
-								ENET_PACKET_FLAG_RELIABLE);
-							enet_peer_send(currentPeer, 0, packet);
-							delete p.data;
-						}
-					}
-				}
-				else if (tile == 2408) {
-					world->owner = ((PlayerInfo*)(peer->data))->rawName;
-					world->isPublic = false;
-					ENetPeer * currentPeer;
-					for (currentPeer = server->peers;
-						currentPeer < &server->peers[server->peerCount];
-						++currentPeer)
-					{
-						if (currentPeer->state != ENET_PEER_STATE_CONNECTED)
-							continue;
-						if (isHere(peer, currentPeer)) {
-							GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "`3[`w" + world->name + " `ohas been World Locked by `2" + ((PlayerInfo*)(peer->data))->displayName + "`3]"));
-							ENetPacket * packet = enet_packet_create(p.data,
-								p.len,
-								ENET_PACKET_FLAG_RELIABLE);
-							enet_peer_send(currentPeer, 0, packet);
-							delete p.data;
-						}
-					}
-				}
-				else if (tile == 5980) {
-					world->owner = ((PlayerInfo*)(peer->data))->rawName;
-					world->isPublic = false;
-					ENetPeer * currentPeer;
-					for (currentPeer = server->peers;
-						currentPeer < &server->peers[server->peerCount];
-						++currentPeer)
-					{
-						if (currentPeer->state != ENET_PEER_STATE_CONNECTED)
-							continue;
-						if (isHere(peer, currentPeer)) {
-							GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "`3[`w" + world->name + " `ohas been World Locked by `2" + ((PlayerInfo*)(peer->data))->displayName + "`3]"));
-							ENetPacket * packet = enet_packet_create(p.data,
-								p.len,
-								ENET_PACKET_FLAG_RELIABLE);
-							enet_peer_send(currentPeer, 0, packet);
-							delete p.data;
-						}
-					}
-				}
-				else if (tile == 4428) {
-					world->owner = ((PlayerInfo*)(peer->data))->rawName;
-					world->isPublic = false;
-					ENetPeer * currentPeer;
-					for (currentPeer = server->peers;
-						currentPeer < &server->peers[server->peerCount];
-						++currentPeer)
-					{
-						if (currentPeer->state != ENET_PEER_STATE_CONNECTED)
-							continue;
-						if (isHere(peer, currentPeer)) {
-							GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "`3[`w" + world->name + " `ohas been World Locked by `2" + ((PlayerInfo*)(peer->data))->displayName + "`3]"));
-							ENetPacket * packet = enet_packet_create(p.data,
-								p.len,
-								ENET_PACKET_FLAG_RELIABLE);
-							enet_peer_send(currentPeer, 0, packet);
-							delete p.data;
-						}
-					}
-				}
-				else if (tile == 5260) {
-					world->owner = ((PlayerInfo*)(peer->data))->rawName;
-					world->isPublic = false;
-					ENetPeer * currentPeer;
-					for (currentPeer = server->peers;
-						currentPeer < &server->peers[server->peerCount];
-						++currentPeer)
-					{
-						if (currentPeer->state != ENET_PEER_STATE_CONNECTED)
-							continue;
-						if (isHere(peer, currentPeer)) {
-							GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "`3[`w" + world->name + " `ohas been World Locked by `2" + ((PlayerInfo*)(peer->data))->displayName + "`3]"));
-							ENetPacket * packet = enet_packet_create(p.data,
-								p.len,
-								ENET_PACKET_FLAG_RELIABLE);
-							enet_peer_send(currentPeer, 0, packet);
-							delete p.data;
-						}
-					}
-				}
-				else if (tile == 7188) {
-					world->owner = ((PlayerInfo*)(peer->data))->rawName;
-					world->isPublic = false;
-					ENetPeer * currentPeer;
+
 					for (currentPeer = server->peers;
 						currentPeer < &server->peers[server->peerCount];
 						++currentPeer)
@@ -1934,7 +1945,7 @@ void SendPacketRaw(int a1, void *packetData, size_t packetDataSize, void *a4, EN
 	{
 		ENetPeer * currentPeer;
 		GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnRemove"), "netID|" + std::to_string(player->netID) + "\n")); // ((PlayerInfo*)(server->peers[i].data))->tankIDName
-		GamePacket p2 = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "`5<`w" + player->displayName + "`` left, `w" + std::to_string(getPlayersCountInWorld(player->currentWorld)-1) + "`` others here>``"));
+		GamePacket p2 = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "`5<`w" + player->displayName + "`` left, `w" + std::to_string(getPlayersCountInWorld(player->currentWorld)) + "`` others here>``"));
 		for (currentPeer = server->peers;
 			currentPeer < &server->peers[server->peerCount];
 			++currentPeer)
@@ -1965,6 +1976,15 @@ void SendPacketRaw(int a1, void *packetData, size_t packetDataSize, void *a4, EN
 		delete p2.data;
 	}
 
+	/*if (isVIPFlag(((PlayerInfo*)(peer->data))->rawName, ((PlayerInfo*)(peer->data))->tankIDPass) > 0)
+		{
+			GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "`o<" + name + "`o> " + message));
+			GamePacket p2 = packetEnd(appendIntx(appendString(appendIntx(appendString(createPacket(), "OnTalkBubble"), netID), message), 0));
+		}
+		else {
+			GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "`o<" + name + "`o> " + message));
+			GamePacket p2 = packetEnd(appendIntx(appendString(appendIntx(appendString(createPacket(), "OnTalkBubble"), netID), message), 0));
+		}*/
 	void sendChatMessage(ENetPeer* peer, int netID, string message)
 	{
 		if (message.length() == 0) return;
@@ -1990,20 +2010,20 @@ void SendPacketRaw(int a1, void *packetData, size_t packetDataSize, void *a4, EN
 				continue;
 			if (isHere(peer, currentPeer))
 			{
-				
+
 				ENetPacket * packet = enet_packet_create(p.data,
 					p.len,
 					ENET_PACKET_FLAG_RELIABLE);
 
 				enet_peer_send(currentPeer, 0, packet);
-				
+
 				//enet_host_flush(server);
-				
+
 				ENetPacket * packet2 = enet_packet_create(p2.data,
 					p2.len,
 					ENET_PACKET_FLAG_RELIABLE);
 				enet_peer_send(currentPeer, 0, packet2);
-				
+
 				//enet_host_flush(server);
 			}
 		}
@@ -2292,7 +2312,7 @@ void SendPacketRaw(int a1, void *packetData, size_t packetDataSize, void *a4, EN
 			worldOffers += worlds[0].name;
 		}
 		
-		worldOffers += "\nadd_button|Showing: `wWorlds``|_catselect_|0.6|3529161471|\n";
+		worldOffers += "\nadd_button|Showing: `wBest Worlds``|_catselect_|0.6|3529161471|\n";
 		for (int i = 0; i < worlds.size(); i++) {
 			worldOffers += "add_floater|"+worlds[i].name+"|"+std::to_string(getPlayersCountInWorld(worlds[i].name))+"|0.55|3529161471\n";
 		}
@@ -2317,6 +2337,13 @@ void SendPacketRaw(int a1, void *packetData, size_t packetDataSize, void *a4, EN
 		return FALSE;
 	}
 
+	/*
+	action|log
+msg|`4UPDATE REQUIRED!`` : The `$V2.981`` update is now available for your device.  Go get it!  You'll need to install it before you can play online.
+[DBG] Some text is here: action|set_url
+url|http://ubistatic-a.akamaihd.net/0098/20180909/GrowtopiaInstaller.exe
+label|Download Latest Version
+	*/
 int _tmain(int argc, _TCHAR* argv[])
 {
 	cout << "Growtopia private server (c) Growtopia Noobs" << endl;
@@ -2357,22 +2384,22 @@ int _tmain(int argc, _TCHAR* argv[])
 
 		if (file.read((char*)(itemsDat + 60), itemsDatSize))
 		{
-			cout << "Updating item data success!" << endl;
+			cout << "Updating items data suecess!" << endl;
 
 		}
 		else {
-			cout << "Updating item data failed!" << endl;
+			cout << "Updating items data failed!" << endl;
 		}
 	}
-	
-	addAdmin("test", "test", 999);
-
+	//for example @Later you should write like this other them addAdmin("username", "password", adminlvl); under of them vip - 1 mod - 2 admin - 999 dev - 1000
+	addAdmin("username", "password", 999);//fortesting ;)
 
 	//world = generateWorld();
 	worldDB.get("TEST");
 	worldDB.get("MAIN");
 	worldDB.get("NEW");
 	worldDB.get("ADMIN");
+	worldDB.get("LEGEND");
 	ENetAddress address;
 	/* Bind the server to the default localhost.     */
 	/* A specific host address can be specified by   */
@@ -2429,7 +2456,7 @@ int _tmain(int argc, _TCHAR* argv[])
 			event.peer->data = new PlayerInfo;
 			if (count > 3)
 			{
-				GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "`rToo many accounts are logged on from this IP. Log off one account before playing please.``"));
+				GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "`rToo much accounts are logged on from this IP. If you don't think so, then please let server relax and connect again in half minute or so.``"));
 				ENetPacket * packet = enet_packet_create(p.data,
 					p.len,
 					ENET_PACKET_FLAG_RELIABLE);
@@ -2525,7 +2552,7 @@ int _tmain(int argc, _TCHAR* argv[])
 						data.plantingTree = 0x0;
 						SendPacketRaw(4, packPlayerMoving(&data), 56, 0, peer, ENET_PACKET_FLAG_RELIABLE);
 					}
-					
+
 					{
 						int x = 3040;
 						int y = 736;
@@ -2537,7 +2564,7 @@ int _tmain(int argc, _TCHAR* argv[])
 								y = (i / world->width) * 32;
 							}
 						}
-						GamePacket p2 = packetEnd(appendFloat(appendString(createPacket(), "OnSetPos"), x,y));
+						GamePacket p2 = packetEnd(appendFloat(appendString(createPacket(), "OnSetPos"), x, y));
 						memcpy(p2.data + 8, &(((PlayerInfo*)(peer->data))->netID), 4);
 						ENetPacket * packet2 = enet_packet_create(p2.data,
 							p2.len,
@@ -2588,7 +2615,7 @@ int _tmain(int argc, _TCHAR* argv[])
 						enet_peer_send(peer, 0, packet2);
 						delete p2.data;
 						//enet_host_flush(server);
-				}
+					}
 #ifdef TOTAL_LOG
 					cout << "Respawning... " << endl;
 #endif
@@ -2608,16 +2635,42 @@ int _tmain(int argc, _TCHAR* argv[])
 #endif
 #ifdef REGISTRATION
 						//GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnDialogRequest"), "set_default_color|`o\n\nadd_label_with_icon|big|`w" + itemDefs.at(id).name + "``|left|" + std::to_string(id) + "|\n\nadd_spacer|small|\nadd_textbox|" + itemDefs.at(id).description + "|left|\nadd_spacer|small|\nadd_quick_exit|\nadd_button|chc0|Close|noflags|0|0|\nnend_dialog|gazette||OK|"));
-							GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnDialogRequest"), "set_default_color|`o\n\nadd_label_with_icon|big|`wGet a GrowID``|left|206|\n\nadd_spacer|small|\nadd_textbox|A `wGrowID `wmeans `oyou can use a name and password to logon from any device.|\nadd_spacer|small|\nadd_textbox|This `wname `owill be reserved for you and `wshown to other players`o, so choose carefully!|\nadd_text_input|username|GrowID||30|\nadd_text_input|password|Password||100|\nadd_textbox|Your `wDiscord ID `owill be used for secondary verification if you lost access to your `wemail address`o! Please enter in such format: `wdiscordname#tag`o. Your `wDiscord Tag `ocan be found in your `wDiscord account settings`o.|\nadd_text_input|discord|Discord||100|\nend_dialog|register|Cancel|Get My GrowID!|\n"));
-							ENetPacket * packet = enet_packet_create(p.data,
+						GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnDialogRequest"), "set_default_color|`o\n\nadd_label_with_icon|big|`wGet your GrowID Now!``|left|32|\n\nadd_spacer|small|\nadd_text_input|username|GrowID: ||15|\nadd_text_input|password|Password: ||100|\nend_dialog|register|Cancel|OK|\n"));
+						ENetPacket * packet = enet_packet_create(p.data,
 							p.len,
 							ENET_PACKET_FLAG_RELIABLE);
 						enet_peer_send(peer, 0, packet);
 
+						enet_host_flush(server);
 						delete p.data;
 #endif
 				}
 				if (cch.find("action|store") == 0)
+				{
+					PlayerInventory inventory;
+					((PlayerInfo*)(event.peer->data))->inventory = inventory;
+					{
+						string name = ((PlayerInfo*)(peer->data))->displayName;
+						GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnDialogRequest"), "set_default_color|`o\n\nadd_label_with_icon|big|`wGrowtopia Store   ``|left|1796|\n\nadd_spacer|small|\n\nadd_textbox|`7Name : `w" + name + "|left|\n\nadd_textbox|`oIf you want in-game admin, vip or etc roles that higher than members you can buy for Growtopia DLS|left|\n\nadd_spacer|small|\nadd_url_button||`1Discord server!|NOFLAGS|https://discord.gg/kkZtp3Q|Open link?\n\nadd_spacer|small|\nadd_button|chc0|Close|noflags|0|0|\nnend_dialog|gazette||OK|"));
+						ENetPacket * packet = enet_packet_create(p.data,
+							p.len,
+							ENET_PACKET_FLAG_RELIABLE);
+						enet_peer_send(peer, 0, packet);
+
+						//enet_host_flush(server);
+						delete p.data;
+					}
+					/*GamePacket p2 = packetEnd(appendString(appendString(createPacket(), "OnStoreRequest"), "set_description_text|Welcome to the `2Growtopia Store``!  Tap the item you'd like more info on.`o  `wWant to get `5Supporter`` status? Any Gem purchase (or `57,000`` Gems earned with free `5Tapjoy`` offers) will make you one. You'll get new skin colors, the `5Recycle`` tool to convert unwanted items into Gems, and more bonuses!\nadd_button|iap_menu|Buy Gems|interface/large/store_buttons5.rttex||0|2|0|0||\nadd_button|subs_menu|Subscriptions|interface/large/store_buttons22.rttex||0|1|0|0||\nadd_button|token_menu|Growtoken Items|interface/large/store_buttons9.rttex||0|0|0|0||\nadd_button|pristine_forceps|`oAnomalizing Pristine Bonesaw``|interface/large/store_buttons20.rttex|Built to exacting specifications by GrowTech engineers to find and remove temporal anomalies from infected patients, and with even more power than Delicate versions! Note : The fragile anomaly - seeking circuitry in these devices is prone to failure and may break (though with less of a chance than a Delicate version)! Use with care!|0|3|3500|0||\nadd_button|itemomonth|`oItem Of The Month``|interface/large/store_buttons16.rttex|`2September 2018:`` `9Sorcerer's Tunic of Mystery!`` Capable of reflecting the true colors of the world around it, this rare tunic is made of captured starlight and aether. If you think knitting with thread is hard, just try doing it with moonbeams and magic! The result is worth it though, as these clothes won't just make you look amazing - you'll be able to channel their inherent power into blasts of cosmic energy!``|0|3|200000|0||\nadd_button|contact_lenses|`oContact Lens Pack``|interface/large/store_buttons22.rttex|Need a colorful new look? This pack includes 10 random Contact Lens colors (and may include Contact Lens Cleaning Solution, to return to your natural eye color)!|0|7|15000|0||\nadd_button|locks_menu|Locks And Stuff|interface/large/store_buttons3.rttex||0|4|0|0||\nadd_button|itempack_menu|Item Packs|interface/large/store_buttons3.rttex||0|3|0|0||\nadd_button|bigitems_menu|Awesome Items|interface/large/store_buttons4.rttex||0|6|0|0||\nadd_button|weather_menu|Weather Machines|interface/large/store_buttons5.rttex|Tired of the same sunny sky?  We offer alternatives within...|0|4|0|0||\n"));
+					ENetPacket * packet2 = enet_packet_create(p2.data,
+						p2.len,
+						ENET_PACKET_FLAG_RELIABLE);
+
+					enet_peer_send(peer, 0, packet2);
+					delete p2.data;*/
+					//enet_host_flush(server);
+				}
+				//if (cch.find("action|logmsg") == | `4UPDATE REQUIRED!`` : The `oV2.981`` update is now available for your device.Go get it!You'll need to install it before you can play online.[DBG] Some text is here: action|set_urlurl|http://ubistatic-a.akamaihd.net/0098/20180909/GrowtopiaInstaller.exelabel|Download Latest Version
+				/*if (cch.find("action|store") == 0)
 				{
 					GamePacket p2 = packetEnd(appendString(appendString(createPacket(), "OnStoreRequest"), "set_description_text|Welcome to the `2Growtopia Store``!  Tap the item you'd like more info on.`o  `wWant to get `5Supporter`` status? Any Gem purchase (or `57,000`` Gems earned with free `5Tapjoy`` offers) will make you one. You'll get new skin colors, the `5Recycle`` tool to convert unwanted items into Gems, and more bonuses!\nadd_button|iap_menu|Buy Gems|interface/large/store_buttons5.rttex||0|2|0|0||\nadd_button|subs_menu|Subscriptions|interface/large/store_buttons22.rttex||0|1|0|0||\nadd_button|token_menu|Growtoken Items|interface/large/store_buttons9.rttex||0|0|0|0||\nadd_button|pristine_forceps|`oAnomalizing Pristine Bonesaw``|interface/large/store_buttons20.rttex|Built to exacting specifications by GrowTech engineers to find and remove temporal anomalies from infected patients, and with even more power than Delicate versions! Note : The fragile anomaly - seeking circuitry in these devices is prone to failure and may break (though with less of a chance than a Delicate version)! Use with care!|0|3|3500|0||\nadd_button|itemomonth|`oItem Of The Month``|interface/large/store_buttons16.rttex|`2September 2018:`` `9Sorcerer's Tunic of Mystery!`` Capable of reflecting the true colors of the world around it, this rare tunic is made of captured starlight and aether. If you think knitting with thread is hard, just try doing it with moonbeams and magic! The result is worth it though, as these clothes won't just make you look amazing - you'll be able to channel their inherent power into blasts of cosmic energy!``|0|3|200000|0||\nadd_button|contact_lenses|`oContact Lens Pack``|interface/large/store_buttons22.rttex|Need a colorful new look? This pack includes 10 random Contact Lens colors (and may include Contact Lens Cleaning Solution, to return to your natural eye color)!|0|7|15000|0||\nadd_button|locks_menu|Locks And Stuff|interface/large/store_buttons3.rttex||0|4|0|0||\nadd_button|itempack_menu|Item Packs|interface/large/store_buttons3.rttex||0|3|0|0||\nadd_button|bigitems_menu|Awesome Items|interface/large/store_buttons4.rttex||0|6|0|0||\nadd_button|weather_menu|Weather Machines|interface/large/store_buttons5.rttex|Tired of the same sunny sky?  We offer alternatives within...|0|4|0|0||\n"));
 					ENetPacket * packet2 = enet_packet_create(p2.data,
@@ -2627,7 +2680,7 @@ int _tmain(int argc, _TCHAR* argv[])
 					enet_peer_send(peer, 0, packet2);
 					delete p2.data;
 					//enet_host_flush(server);
-				}
+				}*/
 				//if (cch.find("action|logmsg") == | `4UPDATE REQUIRED!`` : The `oV2.981`` update is now available for your device.Go get it!You'll need to install it before you can play online.[DBG] Some text is here: action|set_urlurl|http://ubistatic-a.akamaihd.net/0098/20180909/GrowtopiaInstaller.exelabel|Download Latest Version
 				if (cch.find("action|help") == 0)
 				{
@@ -2668,7 +2721,7 @@ int _tmain(int argc, _TCHAR* argv[])
 					((PlayerInfo*)(event.peer->data))->inventory = inventory;
 					{
 						string name = ((PlayerInfo*)(peer->data))->displayName;
-						GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnDialogRequest"), "set_default_color|`o\n\nadd_label_with_icon|big|`w"+ name +"``     `w(`2?`w)|left|18|\nadd_spacer|small|\nadd_button|chc0|Trade|noflags|0|0|\nadd_button|chc0|Freeze|noflags|0|0|\nadd_button|chc0|Punish/View|noflags|0|0|\nadd_button|chc0|Add as friend|noflags|0|0|\nadd_spacer|small|\nadd_button|chc0|Continue|noflags|0|0|\nnend_dialog|gazette||`yOK|"));//friend_button gazette
+						GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnDialogRequest"), "set_default_color|`o\n\nadd_label_with_icon|big|`w" + name + "``     `w(`2?`w)|left|18|\nadd_spacer|small|\nadd_button|chc0|Trade|noflags|0|0|\nadd_button|chc0|Freeze|noflags|0|0|\nadd_button|chc0|Punish/View|noflags|0|0|\nadd_button|chc0|Add as friend|noflags|0|0|\nadd_spacer|small|\nadd_button|chc0|Continue|noflags|0|0|\nnend_dialog|gazette||`yOK|"));//friend_button gazette
 						ENetPacket * packet = enet_packet_create(p.data,
 							p.len,
 							ENET_PACKET_FLAG_RELIABLE);
@@ -2711,7 +2764,7 @@ int _tmain(int argc, _TCHAR* argv[])
 					}
 					if (id == -1 || count == -1) continue;
 					if (itemDefs.size() < id || id < 0) continue;
-					GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnDialogRequest"), "set_default_color|`o\n\nadd_label_with_icon|big|`w"+ itemDefs.at(id).name +"``|left|"+std::to_string(id)+"|\n\nadd_spacer|small|\nadd_textbox|"+ itemDefs.at(id).description +"|left|\nadd_spacer|small|\nadd_quick_exit|\nadd_button|chc0|Close|noflags|0|0|\nnend_dialog|gazette||OK|"));
+					GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnDialogRequest"), "set_default_color|`o\n\nadd_label_with_icon|big|`w" + itemDefs.at(id).name + "``|left|" + std::to_string(id) + "|\n\nadd_spacer|small|\nadd_textbox|" + itemDefs.at(id).description + "|left|\nadd_spacer|small|\nadd_quick_exit|\nadd_button|chc0|Close|noflags|0|0|\nnend_dialog|gazette||OK|"));
 					ENetPacket * packet = enet_packet_create(p.data,
 						p.len,
 						ENET_PACKET_FLAG_RELIABLE);
@@ -2727,8 +2780,7 @@ int _tmain(int argc, _TCHAR* argv[])
 					string btn = "";
 					bool isRegisterDialog = false;
 					string username = "";
-					string password = "";			
-					string discord = "";
+					string password = "";
 					while (std::getline(ss, to, '\n')) {
 						vector<string> infoDat = explode("|", to);
 						if (infoDat.size() == 2) {
@@ -2740,7 +2792,6 @@ int _tmain(int argc, _TCHAR* argv[])
 							if (isRegisterDialog) {
 								if (infoDat[0] == "username") username = infoDat[1];
 								if (infoDat[0] == "password") password = infoDat[1];
-								if (infoDat[0] == "discord") discord = infoDat[1];
 							}
 						}
 					}
@@ -2758,26 +2809,77 @@ int _tmain(int argc, _TCHAR* argv[])
 						((PlayerInfo*)(event.peer->data))->canDoubleJump = true;
 						sendState(peer);
 					}
-					if (btn == "getdirt")
+					if (btn == "ldrag")
 					{
-						PlayerInventory inventory;
-						InventoryItem item;
-						item.itemID = 2;
-						item.itemCount = 200;
-						inventory.items.push_back(item);
-						item.itemCount = 1;
-						item.itemID = 18;
-						inventory.items.push_back(item);
-						item.itemID = 32;
-						inventory.items.push_back(item);
-						sendInventory(peer, inventory);
+						((PlayerInfo*)(peer->data))->cloth_hand = 1782;
+						sendClothes(peer);
+						GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnParticleEffect"), "/interface/particle/explosion.rttex"));
+						GamePacket p2 = packetEnd(appendString(appendString(createPacket(), "OnParticleEffectV2"), "/interface/particle/explosion.rttex"));
+						ENetPacket * packet = enet_packet_create(p.data,p.len,ENET_PACKET_FLAG_RELIABLE);
+						enet_peer_send(peer, 0, packet);
+						ENetPacket * packet2 = enet_packet_create(p2.data, p2.len, ENET_PACKET_FLAG_RELIABLE);
+						enet_peer_send(peer, 0, packet2);
+						delete p2.data;
+						delete p.data;
+					}
+					if (btn == "lwings")
+					{
+						((PlayerInfo*)(peer->data))->cloth_back = 1784;
+						sendClothes(peer);
+						GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnParticleEffect"), "/interface/particle/explosion.rttex"));
+						GamePacket p2 = packetEnd(appendString(appendString(createPacket(), "OnParticleEffectV2"), "/interface/particle/explosion.rttex"));
+						ENetPacket * packet = enet_packet_create(p.data, p.len, ENET_PACKET_FLAG_RELIABLE);
+						enet_peer_send(peer, 0, packet);
+						ENetPacket * packet2 = enet_packet_create(p2.data, p2.len, ENET_PACKET_FLAG_RELIABLE);
+						enet_peer_send(peer, 0, packet2);
+						delete p2.data;
+						delete p.data;
+					}
+					if (btn == "lbot")
+					{
+						((PlayerInfo*)(peer->data))->cloth_shirt = 1780;
+						sendClothes(peer);
+						GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnParticleEffect"), "/interface/particle/explosion.rttex"));
+						GamePacket p2 = packetEnd(appendString(appendString(createPacket(), "OnParticleEffectV2"), "/interface/particle/explosion.rttex"));
+						ENetPacket * packet = enet_packet_create(p.data, p.len, ENET_PACKET_FLAG_RELIABLE);
+						enet_peer_send(peer, 0, packet);
+						ENetPacket * packet2 = enet_packet_create(p2.data, p2.len, ENET_PACKET_FLAG_RELIABLE);
+						enet_peer_send(peer, 0, packet2);
+						delete p2.data;
+						delete p.data;
+					}
+					if (btn == "lwhip")
+					{
+						((PlayerInfo*)(peer->data))->cloth_hand = 6026;
+						sendClothes(peer);
+						GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnParticleEffect"), "/interface/particle/explosion.rttex"));
+						GamePacket p2 = packetEnd(appendString(appendString(createPacket(), "OnParticleEffectV2"), "/interface/particle/explosion.rttex"));
+						ENetPacket * packet = enet_packet_create(p.data, p.len, ENET_PACKET_FLAG_RELIABLE);
+						enet_peer_send(peer, 0, packet);
+						ENetPacket * packet2 = enet_packet_create(p2.data, p2.len, ENET_PACKET_FLAG_RELIABLE);
+						enet_peer_send(peer, 0, packet2);
+						delete p2.data;
+						delete p.data;
+					}
+					if (btn == "lkat")
+					{
+						((PlayerInfo*)(peer->data))->cloth_hand = 2592;
+						sendClothes(peer);
+						GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnParticleEffect"), "/interface/particle/explosion.rttex"));
+						GamePacket p2 = packetEnd(appendString(appendString(createPacket(), "OnParticleEffectV2"), "/interface/particle/explosion.rttex"));
+						ENetPacket * packet = enet_packet_create(p.data, p.len, ENET_PACKET_FLAG_RELIABLE);
+						enet_peer_send(peer, 0, packet);
+						ENetPacket * packet2 = enet_packet_create(p2.data, p2.len, ENET_PACKET_FLAG_RELIABLE);
+						enet_peer_send(peer, 0, packet2);
+						delete p2.data;
+						delete p.data;
 					}
 #ifdef REGISTRATION
 					if (isRegisterDialog) {
 
-						int regState = PlayerDB::playerRegister(username, password, discord);
+						int regState = PlayerDB::playerRegister(username, password);
 						if (regState == 1) {
-							GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "`rYour account has been created!``"));
+							GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "`rYour account was created!``"));
 							ENetPacket * packet = enet_packet_create(p.data,
 								p.len,
 								ENET_PACKET_FLAG_RELIABLE);
@@ -2794,7 +2896,7 @@ int _tmain(int argc, _TCHAR* argv[])
 							enet_peer_disconnect_later(peer, 0);
 						}
 						else if(regState==-1) {
-							GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "`rAccount creation has failed, because it already exists!``"));
+							GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "`rCreation of account failed, because it already exists!``"));
 							ENetPacket * packet = enet_packet_create(p.data,
 								p.len,
 								ENET_PACKET_FLAG_RELIABLE);
@@ -2802,7 +2904,7 @@ int _tmain(int argc, _TCHAR* argv[])
 							delete p.data;
 						}
 						else if (regState == -2) {
-							GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "`rAccount creation has failed, because the name is too short!``"));
+							GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "`rCreation of account failed, because name is too short!``"));
 							ENetPacket * packet = enet_packet_create(p.data,
 								p.len,
 								ENET_PACKET_FLAG_RELIABLE);
@@ -2848,20 +2950,6 @@ int _tmain(int argc, _TCHAR* argv[])
 							//enet_host_flush(server);
 							delete p.data;
 						}
-						//((PlayerInfo*)(peer->data))->canWalkInBlocks = true;
-						//sendState(peer);
-							/*PlayerMoving data;
-							data.packetType = 0x14;
-							data.characterState = 0x0; // animation
-							data.x = 1000;
-							data.y = 1;
-							data.punchX = 0;
-							data.punchY = 0;
-							data.XSpeed = 300;
-							data.YSpeed = 600;
-							data.netID = ((PlayerInfo*)(peer->data))->netID;
-							data.plantingTree = 0xFF;
-							SendPacketRaw(4, packPlayerMoving(&data), 56, 0, peer, ENET_PACKET_FLAG_RELIABLE);*/
 					}
 					else if (str.substr(0, 7) == "/state ")
 					{
@@ -2878,28 +2966,65 @@ int _tmain(int argc, _TCHAR* argv[])
 						data.plantingTree = atoi(str.substr(7, cch.length() - 7 - 1).c_str());
 						SendPacketRaw(4, packPlayerMoving(&data), 56, 0, peer, ENET_PACKET_FLAG_RELIABLE);
 					}
-					else if (str.substr(0, 5) == "/ban ")
+					else if (str == "/unequip")
 					{
-						if (!canSB(((PlayerInfo*)(peer->data))->rawName, ((PlayerInfo*)(peer->data))->tankIDPass)) continue;
-						GamePacket ban = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "`#** `$The Ancients `ohave used `#Ban `oon `0" + str.substr(5, cch.length() - 5 - 1) + "`o! `#**"));
-						ENetPacket * packetba = enet_packet_create(ban.data,
-							ban.len,
-							ENET_PACKET_FLAG_RELIABLE);
-						ENetPeer * currentPeer;
-						for (currentPeer = server->peers;
-							currentPeer < &server->peers[server->peerCount];
-							++currentPeer)
+						((PlayerInfo*)(peer->data))->cloth_hair = 0;
+						((PlayerInfo*)(peer->data))->cloth_shirt = 0;
+						((PlayerInfo*)(peer->data))->cloth_pants = 0;
+						((PlayerInfo*)(peer->data))->cloth_feet = 0;
+						((PlayerInfo*)(peer->data))->cloth_face = 0;
+						((PlayerInfo*)(peer->data))->cloth_hand = 0;
+						((PlayerInfo*)(peer->data))->cloth_back = 0;
+						((PlayerInfo*)(peer->data))->cloth_mask = 0;
+						((PlayerInfo*)(peer->data))->cloth_necklace = 0;
+						sendClothes(peer);
+					}
+					else if (str.substr(0, 5) == "/ban ") {
 						{
-							if (currentPeer->state != ENET_PEER_STATE_CONNECTED)
-								continue;
-							enet_peer_send(currentPeer, 0, packetba);
+							if (!isSuperAdmin(((PlayerInfo*)(peer->data))->rawName, ((PlayerInfo*)(peer->data))->tankIDPass)) break;
+							GamePacket ban = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "`#** `$The Ancients `ohave used `#Ban `oon `0" + str.substr(5, cch.length() - 5 - 1) + "`o! `#**"));
+							ENetPacket * packetba = enet_packet_create(ban.data,
+								ban.len,
+								ENET_PACKET_FLAG_RELIABLE);
+							ENetPeer * currentPeer;
+							for (currentPeer = server->peers;
+								currentPeer < &server->peers[server->peerCount];
+								++currentPeer)
+							{
+								if (currentPeer->state != ENET_PEER_STATE_CONNECTED)
+									continue;
+								enet_peer_send(currentPeer, 0, packetba);
+							}
+							if (str.substr(7, cch.length() - 7 - 1) == "") continue;
+							string username = PlayerDB::getProperName(str.substr(7, cch.length() - 7 - 1));
+							unbangay("true", username);
+							enet_host_flush(server);
+							delete ban.data;
+
+
 						}
 
-						//enet_host_flush(server);
-						delete ban.data;
 					}
-					else if (str == "/help"){
-						GamePacket p = packetEnd(appendString(appendString(appendString(createPacket(), "OnConsoleMessage"), "Supported commands are: /help, /mod, /inventory, /item id, /team id, /color number, /who, /state number, /count, /sb message, /alt, /radio, /ah, /gems amount, /vweather id"), "audio/beep.wav"));
+					else if (str == "/help") {
+						GamePacket p = packetEnd(appendString(appendString(appendString(createPacket(), "OnConsoleMessage"), "Supported commands are: /help, /mod, /inventory, /item id, /team id, /color number, /who, /state number, /count, /sb message, /alt, /radio, /ah, /gems amount, /vweather id, /unequip"), "audio/beep.wav"));
+						ENetPacket * packet = enet_packet_create(p.data,
+							p.len,
+							ENET_PACKET_FLAG_RELIABLE);
+						enet_peer_send(peer, 0, packet);
+						delete p.data;
+						//enet_host_flush(server);
+					}
+					else if (str == "/vhelp") {
+						GamePacket p = packetEnd(appendString(appendString(appendString(createPacket(), "OnConsoleMessage"), "`9VIP Commands `o: /vnick /nick /vsb /find"), "audio/beep.wav"));
+						ENetPacket * packet = enet_packet_create(p.data,
+							p.len,
+							ENET_PACKET_FLAG_RELIABLE);
+						enet_peer_send(peer, 0, packet);
+						delete p.data;
+						//enet_host_flush(server);
+					}
+					else if (str == "/mhelp") {
+						GamePacket p = packetEnd(appendString(appendString(appendString(createPacket(), "OnConsoleMessage"), "`bModerator Commands `o: /vnick /mnick /nick /vsb /msb /find /pull /ah"), "audio/beep.wav"));
 						ENetPacket * packet = enet_packet_create(p.data,
 							p.len,
 							ENET_PACKET_FLAG_RELIABLE);
@@ -2908,7 +3033,7 @@ int _tmain(int argc, _TCHAR* argv[])
 						//enet_host_flush(server);
 					}
 					else if (str == "/?") {
-						GamePacket p = packetEnd(appendString(appendString(appendString(createPacket(), "OnConsoleMessage"), "Supported commands are: /help, /mod, /inventory, /item id, /team id, /color number, /who, /state number, /count, /sb message, /alt, /radio, /ah, /gems amount, /vweather id"), "audio/beep.wav"));
+						GamePacket p = packetEnd(appendString(appendString(appendString(createPacket(), "OnConsoleMessage"), "Supported commands are: /help, /mod, /inventory, /item id, /team id, /color number, /who, /state number, /count, /sb message, /alt, /radio, /ah, /gems amount, /vweather id, /unequip"), "audio/beep.wav"));
 						ENetPacket * packet = enet_packet_create(p.data,
 							p.len,
 							ENET_PACKET_FLAG_RELIABLE);
@@ -2916,15 +3041,10 @@ int _tmain(int argc, _TCHAR* argv[])
 						delete p.data;
 						//enet_host_flush(server);
 					}
-					else if (str == "/ah")
+					else if (str == "/legend")
 					{
-						if (!canSB(((PlayerInfo*)(peer->data))->rawName, ((PlayerInfo*)(peer->data))->tankIDPass)) continue;
-							ENetPeer* currentPeer;
-							PlayerInventory inventory;
-							((PlayerInfo*)(event.peer->data))->inventory = inventory;
-							{
-								string name = ((PlayerInfo*)(peer->data))->displayName;
-								GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnDialogRequest"), "set_default_color|`o\n\nadd_label_with_icon|big|`wAdministrator Help``|left|1796|\n\nadd_spacer|small|\n\nadd_textbox|`7Name : `w" + name + "|left|\n\nadd_spacer|small|\n\nadd_label_with_icon|small|`4COMMAND:`` /asb (Admin Super Boardcast)|left|5956|\n\nadd_spacer|small|\nadd_label_with_icon|small|`4COMMAND:`` /reset (Use when Owner tells you to.)|left|5956|\nadd_label_with_icon|small|`4COMMAND:`` /sdb (Super Duper Boardcast) `4*Disabled ``|left|5956|\nadd_spacer|small|\nadd_label_with_icon|small|`4COMMAND:`` /gsm (Global System Message)|left|5956||0|0|\nadd_spacer|small|\nadd_button|chc0|Close|noflags|0|0|\nadd_quick_exit|\nnend_dialog|gazette||OK|"));
+				
+								GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnDialogRequest"), "set_default_color|`o\n\nadd_label_with_icon|big|`9The Legendary Wizard``|left|1790|\nadd_textbox|`oGreetings, Traveler! I am the Legendary Wizard. Should to embark on a Legendary Quest, Simply choose one below.|left|\nadd_spacer|small|\nadd_button|ltitle|Quest for Honor|noflags|0|0|\nadd_button|ldrag|Quest for Fire|noflags|0|0|\nadd_button|lbot|Quest Of Steel|noflags|0|0|\nadd_button|lwings|Quest Of The Heavens|noflags|0|0|\nadd_button|lkat|Quest of Blade|noflags|0|0|\nadd_button|lwhip|Quest for Condour|noflags|0|0|\nadd_spacer|small|\nadd_button|c0co|Close|noflags|0|0|\nnend_dialog|gazette||OK|"));
 								ENetPacket * packet = enet_packet_create(p.data,
 									p.len,
 									ENET_PACKET_FLAG_RELIABLE);
@@ -2932,7 +3052,24 @@ int _tmain(int argc, _TCHAR* argv[])
 
 								//enet_host_flush(server);
 								delete p.data;
-							}
+					}
+					else if (str == "/ah")
+					{
+						if (!isNormalAdmin(((PlayerInfo*)(peer->data))->rawName, ((PlayerInfo*)(peer->data))->tankIDPass)) break;
+						ENetPeer* currentPeer;
+						PlayerInventory inventory;
+						((PlayerInfo*)(event.peer->data))->inventory = inventory;
+						{
+							string name = ((PlayerInfo*)(peer->data))->displayName;
+							GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnDialogRequest"), "set_default_color|`o\n\nadd_label_with_icon|big|`wAdministrator Help``|left|1796|\n\nadd_spacer|small|\n\nadd_textbox|`7Name : `w" + name + "|left|\n\nadd_spacer|small|\n\nadd_label_with_icon|small|`4COMMAND:`` /asb (Admin Super Boardcast)|left|5956|\n\nadd_spacer|small|\nadd_label_with_icon|small|`4COMMAND:`` /reset (Use when the owener tells you to.)|left|5956|\nadd_label_with_icon|small|`4COMMAND:`` /sdb (Super Duper Boardcast) `4*Disabled ``|left|5956|\nadd_spacer|small|\nadd_label_with_icon|small|`4COMMAND:`` /gsm (Global System Message)|left|5956||0|0|\nadd_spacer|small|\nadd_button|chc0|Close|noflags|0|0|\nadd_quick_exit|\nnend_dialog|gazette||OK|"));
+							ENetPacket * packet = enet_packet_create(p.data,
+								p.len,
+								ENET_PACKET_FLAG_RELIABLE);
+							enet_peer_send(peer, 0, packet);
+
+							//enet_host_flush(server);
+							delete p.data;
+						}
 					}
 					else if (str.substr(0, 6) == "/gems ")
 					{
@@ -2961,115 +3098,38 @@ int _tmain(int argc, _TCHAR* argv[])
 						continue;
 
 					}
-					else if (str.substr(0, 7) == "/unban ") {
-					if (!isSuperAdmin(((PlayerInfo*)(peer->data))->rawName, ((PlayerInfo*)(peer->data))->tankIDPass)) break;
-					if (str.substr(7, cch.length() - 7 - 1) == "") continue;
-					string username = PlayerDB::getProperName(str.substr(7, cch.length() - 7 - 1));
-					unbangay("false", username);
-					}
-					else if (str.substr(0, 5) == "/mods") {
+					else if (str.substr(0, 6) == "/find ") {
+						if (!isVIP(((PlayerInfo*)(peer->data))->rawName, ((PlayerInfo*)(peer->data))->tankIDPass)) break;
+						if (str.substr(6, cch.length() - 6 - 1) == "") continue;
 
-					string mods = "";
+						ENetPeer * currentPeer;
 
-					ENetPeer * currentPeer;
+						GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "Finding user: " + str.substr(6, cch.length() - 6 - 1)));
 
-					for (currentPeer = server->peers;
-						currentPeer < &server->peers[server->peerCount];
-						++currentPeer)
-					{
-						if (currentPeer->state != ENET_PEER_STATE_CONNECTED)
-							continue;
+						ENetPacket * packet = enet_packet_create(p.data,
+							p.len,
+							ENET_PACKET_FLAG_RELIABLE);
+						enet_peer_send(peer, 0, packet);
+						delete p.data;
 
-						if (getAdminLevel(((PlayerInfo*)(currentPeer->data))->rawName, ((PlayerInfo*)(currentPeer->data))->tankIDPass) > 0) {
-							mods += ((PlayerInfo*)(currentPeer->data))->rawName + " ";
-						}
-					}
+						for (currentPeer = server->peers;
+							currentPeer < &server->peers[server->peerCount];
+							++currentPeer)
+						{
+							if (currentPeer->state != ENET_PEER_STATE_CONNECTED)
+								continue;
 
-					GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "Mods online: " + mods));
-					ENetPacket * packet = enet_packet_create(p.data,
-						p.len,
-						ENET_PACKET_FLAG_RELIABLE);
-					enet_peer_send(peer, 0, packet);
-					delete p.data;
+							if (((PlayerInfo*)(currentPeer->data))->rawName == str.substr(6, cch.length() - 6 - 1)) {
+								if (((PlayerInfo*)(currentPeer->data))->haveGrowId == false) continue;
+								GamePacket psp = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "user " + str.substr(6, cch.length() - 6 - 1) + " is located at: " + ((PlayerInfo*)(currentPeer->data))->currentWorld));
 
-					}
-					else if (str.substr(0, 6) == "/pull ") {
-					if (!isSuperAdmin(((PlayerInfo*)(peer->data))->rawName, ((PlayerInfo*)(peer->data))->tankIDPass)) break;
-					if (str.substr(6, cch.length() - 6 - 1) == "") continue;
-
-					ENetPeer * currentPeer;
-
-					GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "Pulled user: " + str.substr(6, cch.length() - 6 - 1)));
-					ENetPacket * packet = enet_packet_create(p.data,
-						p.len,
-						ENET_PACKET_FLAG_RELIABLE);
-					for (currentPeer = server->peers;
-						currentPeer < &server->peers[server->peerCount];
-						++currentPeer)
-					{
-						if (currentPeer->state != ENET_PEER_STATE_CONNECTED)
-							continue;
-
-						if (((PlayerInfo*)(currentPeer->data))->rawName == str.substr(6, cch.length() - 6 - 1)) {
-							if (((PlayerInfo*)(currentPeer->data))->haveGrowId == false) continue;
-							if (((PlayerInfo*)(currentPeer->data))->currentWorld == ((PlayerInfo*)(peer->data))->currentWorld) {
-								((PlayerInfo*)(currentPeer->data))->y = ((PlayerInfo*)(peer->data))->y;
-								((PlayerInfo*)(currentPeer->data))->x = ((PlayerInfo*)(peer->data))->x;
+								ENetPacket * packetd = enet_packet_create(psp.data,
+									psp.len,
+									ENET_PACKET_FLAG_RELIABLE);
+								enet_peer_send(peer, 0, packetd);
+								delete psp.data;
 							}
 						}
-
-						enet_peer_send(peer, 0, packet);
-					}
-					delete p.data;
-					}
-					else if (str.substr(0, 6) == "/warp ") {
-					if (!isSuperAdmin(((PlayerInfo*)(peer->data))->rawName, ((PlayerInfo*)(peer->data))->tankIDPass)) break;
-					sendPlayerLeave(peer, (PlayerInfo*)(event.peer->data));
-					string world = str.substr(6, cch.length() - 6 - 1);
-					((PlayerInfo*)(peer->data))->currentWorld = str.substr(6, cch.length() - 6 - 1);
-					GamePacket ps = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "Warping to... " + world +""));
-					ENetPacket * packet = enet_packet_create(ps.data,
-						ps.len,
-						ENET_PACKET_FLAG_RELIABLE);
-
-					enet_peer_send(peer, 0, packet);
-					delete ps.data;
-					//enet_host_flush(server);
-					}
-					//sendPlayerLeave(peer, (PlayerInfo*)(event.peer->data));
-					//((PlayerInfo*)(peer->data))->currentWorld = "EXIT";
-					else if (str.substr(0, 6) == "/find ") {
-					if (!isSuperAdmin(((PlayerInfo*)(peer->data))->rawName, ((PlayerInfo*)(peer->data))->tankIDPass)) break;
-					if (str.substr(6, cch.length() - 6 - 1) == "") continue;
-
-					ENetPeer * currentPeer;
-
-					GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "Finding user: " + str.substr(6, cch.length() - 6 - 1)));
-
-					ENetPacket * packet = enet_packet_create(p.data,
-						p.len,
-						ENET_PACKET_FLAG_RELIABLE);
-					enet_peer_send(peer, 0, packet);
-					delete p.data;
-
-					for (currentPeer = server->peers;
-						currentPeer < &server->peers[server->peerCount];
-						++currentPeer)
-					{
-						if (currentPeer->state != ENET_PEER_STATE_CONNECTED)
-							continue;
-
-						if (((PlayerInfo*)(currentPeer->data))->rawName == str.substr(6, cch.length() - 6 - 1)) {
-							if (((PlayerInfo*)(currentPeer->data))->haveGrowId == false) continue;
-							GamePacket psp = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "user " + str.substr(6, cch.length() - 6 - 1) + " is located at: " + ((PlayerInfo*)(currentPeer->data))->currentWorld));
-
-							ENetPacket * packetd = enet_packet_create(psp.data,
-								psp.len,
-								ENET_PACKET_FLAG_RELIABLE);
-							enet_peer_send(peer, 0, packetd);
-							delete psp.data;
-						}
-					}
 					}
 					/*else if (str == "/find")
 					{
@@ -3099,156 +3159,57 @@ int _tmain(int argc, _TCHAR* argv[])
 					delete p.data;
 					continue;
 
-                    }*/
-					//|\nadd_text_input|username|GrowID||30|
-					/*else if (str.substr(0, 6) == "/nick ")
-					{
-					if (!canSB(((PlayerInfo*)(peer->data))->rawName, ((PlayerInfo*)(peer->data))->tankIDPass)) continue;
-					((PlayerInfo*)(peer->data))->displayName = str.substr(6, cch.length() - 0 - 6).c_str();
-					sendPlayerLeave(peer, (PlayerInfo*)(event.peer->data));
-					((PlayerInfo*)(peer->data))->currentWorld = "EXIT";
-					sendWorldOffers(peer);
-					continue;
 					}*/
-					else if (str.substr(0, 6) == "/drop ")
+					//|\nadd_text_input|username|GrowID||30|
+					else if (str.substr(0, 7) == "/unban ") {
 						{
-
-						//rl
-						sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? 1 : -1)), ((PlayerInfo*)(peer->data))->y, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
-						sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? 2 : -2)), ((PlayerInfo*)(peer->data))->y, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
-						sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? 3 : -3)), ((PlayerInfo*)(peer->data))->y, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
-						sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? 4 : -4)), ((PlayerInfo*)(peer->data))->y, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
-						sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? 5 : -5)), ((PlayerInfo*)(peer->data))->y, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
-						sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? -1 : 1)), ((PlayerInfo*)(peer->data))->y, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
-						sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? -2 : 2)), ((PlayerInfo*)(peer->data))->y, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
-						sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? -3 : 3)), ((PlayerInfo*)(peer->data))->y, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
-						sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? -4 : 4)), ((PlayerInfo*)(peer->data))->y, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
-						sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? -5 : 5)), ((PlayerInfo*)(peer->data))->y, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
-						sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? -5 : 5)), ((PlayerInfo*)(peer->data))->y, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
-
-						//up lr
-						sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? 1 : -1)), ((PlayerInfo*)(peer->data))->y - 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
-						sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? 2 : -2)), ((PlayerInfo*)(peer->data))->y - 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
-						sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? 3 : -3)), ((PlayerInfo*)(peer->data))->y - 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
-						sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? 4 : -4)), ((PlayerInfo*)(peer->data))->y - 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
-						sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? 5 : -5)), ((PlayerInfo*)(peer->data))->y - 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
-						sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? -1 : 1)), ((PlayerInfo*)(peer->data))->y - 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
-						sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? -2 : 2)), ((PlayerInfo*)(peer->data))->y - 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
-						sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? -3 : 3)), ((PlayerInfo*)(peer->data))->y - 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
-						sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? -4 : 4)), ((PlayerInfo*)(peer->data))->y - 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
-						sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? -5 : 5)), ((PlayerInfo*)(peer->data))->y - 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
-						sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? -5 : 5)), ((PlayerInfo*)(peer->data))->y - 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
-
-						//down lr
-
-						sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? 1 : -1)), ((PlayerInfo*)(peer->data))->y + 1, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
-						sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? 2 : -2)), ((PlayerInfo*)(peer->data))->y + 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
-						sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? 3 : -3)), ((PlayerInfo*)(peer->data))->y + 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
-						sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? 4 : -4)), ((PlayerInfo*)(peer->data))->y + 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
-						sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? 5 : -5)), ((PlayerInfo*)(peer->data))->y + 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
-						sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? -1 : 1)), ((PlayerInfo*)(peer->data))->y + 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
-						sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? -2 : 2)), ((PlayerInfo*)(peer->data))->y + 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
-						sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? -3 : 3)), ((PlayerInfo*)(peer->data))->y + 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
-						sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? -4 : 4)), ((PlayerInfo*)(peer->data))->y + 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
-						sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? -5 : 5)), ((PlayerInfo*)(peer->data))->y + 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
-						sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? -5 : 5)), ((PlayerInfo*)(peer->data))->y + 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
+							if (!isSuperAdmin(((PlayerInfo*)(peer->data))->rawName, ((PlayerInfo*)(peer->data))->tankIDPass)) break;
+							GamePacket ban = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "`#** `$The Ancients `ohave used `#UnBan `oon `0" + str.substr(5, cch.length() - 5 - 1) + "`o! `#**"));
+							ENetPacket * packetba = enet_packet_create(ban.data,
+								ban.len,
+								ENET_PACKET_FLAG_RELIABLE);
+							ENetPeer * currentPeer;
+							for (currentPeer = server->peers;
+								currentPeer < &server->peers[server->peerCount];
+								++currentPeer)
+							{
+								enet_peer_send(currentPeer, 0, packetba);
+							}
+							if (str.substr(7, cch.length() - 7 - 1) == "") continue;
+							string username = PlayerDB::getProperName(str.substr(7, cch.length() - 7 - 1));
+							unbangay("false", username);
+							enet_host_flush(server);
+							delete ban.data;
 
 						}
-					else if (str.substr(0, 6) == "/nick ") {
-					if (!isSuperAdmin(((PlayerInfo*)(peer->data))->rawName, ((PlayerInfo*)(peer->data))->tankIDPass)) break;
-					cout << ((PlayerInfo*)(peer->data))->displayName << "nicked into " << str.substr(6, cch.length() - 6 - 1) << endl;
-					sendPlayerLeave(peer, (PlayerInfo*)(event.peer->data));
-					((PlayerInfo*)(peer->data))->currentWorld = "EXIT";
-					sendWorldOffers(peer);
 
-					((PlayerInfo*)(peer->data))->displayName = str.substr(6, cch.length() - 6 - 1);
-
-					GamePacket ps = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "Your nickname has been changed!"));
-					ENetPacket * packet = enet_packet_create(ps.data,
-						ps.len,
-						ENET_PACKET_FLAG_RELIABLE);
-
-					enet_peer_send(peer, 0, packet);
-					delete ps.data;
-					//enet_host_flush(server);
 					}
-					else if (str == "/invis")
+					else if (str == "/mods") {
+
+					string mods = "";
+
+					ENetPeer * currentPeer;
+
+					for (currentPeer = server->peers;
+						currentPeer < &server->peers[server->peerCount];
+						++currentPeer)
 					{
-					if (!isSuperAdmin(((PlayerInfo*)(peer->data))->rawName, ((PlayerInfo*)(peer->data))->tankIDPass)) break;
-					//string name = ((PlayerInfo*)(peer->data))->displayName;
-					((PlayerInfo*)(peer->data))->displayName = "";
-					GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "Invisible mode `2ON"));
+						if (currentPeer->state != ENET_PEER_STATE_CONNECTED)
+							continue;
+
+						if (isNormalAdmin(((PlayerInfo*)(currentPeer->data))->rawName, ((PlayerInfo*)(currentPeer->data))->tankIDPass) > 0)
+						{
+							mods += ((PlayerInfo*)(currentPeer->data))->rawName ==  + " ,";
+						}
+					}
+
+					GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "Mods online: " + mods));
 					ENetPacket * packet = enet_packet_create(p.data,
 						p.len,
 						ENET_PACKET_FLAG_RELIABLE);
 					enet_peer_send(peer, 0, packet);
 					delete p.data;
-					((PlayerInfo*)(event.peer->data))->canDoubleJump = true;
-					((PlayerInfo*)(event.peer->data))->canWalkInBlocks= true;
-					((PlayerInfo*)(peer->data))->cloth_face = 0;
-					sendPlayerLeave(peer, (PlayerInfo*)(event.peer->data));
-					((PlayerInfo*)(peer->data))->currentWorld = "EXIT";
-					sendWorldOffers(peer);
-					continue;
 
-					}
-					else if (str.substr(0, 9) == "/weather ")
-					{
-						if (world->name != "ADMIN") {
-							if (world->owner != "") {
-								ENetPeer* currentPeer;
-
-								for (currentPeer = server->peers;
-									currentPeer < &server->peers[server->peerCount];
-									++currentPeer)
-								{
-									if (currentPeer->state != ENET_PEER_STATE_CONNECTED)
-										continue;
-									if (isHere(peer, currentPeer))
-									{
-										GamePacket p1 = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "`oPlayer `2" + ((PlayerInfo*)(peer->data))->displayName + "`o has just changed the world's weather!"));
-										ENetPacket * packet1 = enet_packet_create(p1.data,
-											p1.len,
-											ENET_PACKET_FLAG_RELIABLE);
-
-										enet_peer_send(currentPeer, 0, packet1);
-										delete p1.data;
-
-										GamePacket p2 = packetEnd(appendInt(appendString(createPacket(), "OnSetCurrentWeather"), world->weather));
-										ENetPacket * packet2 = enet_packet_create(p2.data,
-											p2.len,
-											ENET_PACKET_FLAG_RELIABLE);
-
-										enet_peer_send(currentPeer, 0, packet2);
-										delete p2.data;
-										continue;
-									}
-								}
-							}
-						}
-					}
-					else if (str.substr(0, 6) == "/drop ") {
-						sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? -1 : 1)), ((PlayerInfo*)(peer->data))->y, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
-					}
-					else if (str == "/count"){
-						int count = 0;
-						ENetPeer * currentPeer;
-						string name = "";
-						for (currentPeer = server->peers;
-							currentPeer < &server->peers[server->peerCount];
-							++currentPeer)
-						{
-							if (currentPeer->state != ENET_PEER_STATE_CONNECTED)
-								continue;
-							count++;
-						}
-						GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "There are "+std::to_string(count)+" people online out of 1024 limit."));
-						ENetPacket * packet = enet_packet_create(p.data,
-							p.len,
-							ENET_PACKET_FLAG_RELIABLE);
-						enet_peer_send(peer, 0, packet);
-						delete p.data;
-						//enet_host_flush(server);
 					}
 					else if (str.substr(0, 4) == "/bc ") {
 					using namespace std::chrono;
@@ -3269,7 +3230,7 @@ int _tmain(int argc, _TCHAR* argv[])
 					}
 
 					string name = ((PlayerInfo*)(peer->data))->displayName;
-					GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "`w** `5Boardcast`` from `o`2" + name + "```` :`` `# " + str.substr(4, cch.length() - 4 - 1)));
+					GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "`w** `5Broadcast`` from `o`2" + name + "```` :`` `# " + str.substr(4, cch.length() - 4 - 1)));
 					string text = "action|play_sfx\nfile|audio/beep.wav\ndelayMS|0\n";
 					BYTE* data = new BYTE[5 + text.length()];
 					BYTE zero = 0;
@@ -3307,13 +3268,345 @@ int _tmain(int argc, _TCHAR* argv[])
 					delete data;
 					delete p.data;
 					}
-					else if (str.substr(0, 5) == "/gsm ") 
-                    {
-					if (!isAdmin(((PlayerInfo*)(peer->data))->rawName, ((PlayerInfo*)(peer->data))->tankIDPass)) break;
+					else if (str.substr(0, 5) == "/gsm ")
+					{
+					if (!isSuperAdmin(((PlayerInfo*)(peer->data))->rawName, ((PlayerInfo*)(peer->data))->tankIDPass)) break;
 					cout << "GSM from " << ((PlayerInfo*)(peer->data))->rawName << " in world " << ((PlayerInfo*)(peer->data))->currentWorld << "with IP " << std::hex << peer->address.host << std::dec << " with message " << str.substr(5, cch.length() - 5 - 1) << endl;
 					using namespace std::chrono;
 					string name = ((PlayerInfo*)(peer->data))->displayName;
 					GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "Global System Message :`` " + str.substr(4, cch.length() - 4 - 1)));
+					string text = "action|play_sfx\nfile|audio/beep.wav\ndelayMS|0\n";
+					BYTE* data = new BYTE[5 + text.length()];
+					BYTE zero = 0;
+					int type = 3;
+					memcpy(data, &type, 4);
+					memcpy(data + 4, text.c_str(), text.length());
+					memcpy(data + 4 + text.length(), &zero, 1);
+					ENetPeer * currentPeer;
+
+					for (currentPeer = server->peers;
+						currentPeer < &server->peers[server->peerCount];
+						++currentPeer)
+					{
+						if (currentPeer->state != ENET_PEER_STATE_CONNECTED)
+							continue;
+						if (!((PlayerInfo*)(currentPeer->data))->radio)
+							continue;
+						ENetPacket * packet = enet_packet_create(p.data,
+							p.len,
+							ENET_PACKET_FLAG_RELIABLE);
+
+						enet_peer_send(currentPeer, 0, packet);
+
+
+
+
+						ENetPacket * packet2 = enet_packet_create(data,
+							5 + text.length(),
+							ENET_PACKET_FLAG_RELIABLE);
+
+						enet_peer_send(currentPeer, 0, packet2);
+
+						//enet_host_flush(server);
+					}
+					delete data;
+					delete p.data;
+					}
+					else if (str.substr(0, 6) == "/pull ") {
+					if (!isSuperAdmin(((PlayerInfo*)(peer->data))->rawName, ((PlayerInfo*)(peer->data))->tankIDPass)) break;
+					if (str.substr(6, cch.length() - 6 - 1) == "") continue;
+
+					ENetPeer * currentPeer;
+
+					GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "Pulled user: " + str.substr(6, cch.length() - 6 - 1)));
+					ENetPacket * packet = enet_packet_create(p.data,
+						p.len,
+						ENET_PACKET_FLAG_RELIABLE);
+					for (currentPeer = server->peers;
+						currentPeer < &server->peers[server->peerCount];
+						++currentPeer)
+					{
+						if (currentPeer->state != ENET_PEER_STATE_CONNECTED)
+							continue;
+
+						if (((PlayerInfo*)(currentPeer->data))->rawName == str.substr(6, cch.length() - 6 - 1)) {
+							if (((PlayerInfo*)(currentPeer->data))->haveGrowId == false) continue;
+							if (((PlayerInfo*)(currentPeer->data))->currentWorld == ((PlayerInfo*)(peer->data))->currentWorld) {
+								((PlayerInfo*)(currentPeer->data))->y = ((PlayerInfo*)(peer->data))->y;
+								((PlayerInfo*)(currentPeer->data))->x = ((PlayerInfo*)(peer->data))->x;
+							}
+						}
+
+						enet_peer_send(peer, 0, packet);
+					}
+					delete p.data;
+					}
+					/*else if (str.substr(0, 5) == "/ban ")
+						{
+						if (!canSB(((PlayerInfo*)(peer->data))->rawName, ((PlayerInfo*)(peer->data))->tankIDPass)) continue;
+						GamePacket ban = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "`#** `$The Ancients `ohave used `#Ban `oon `0" + str.substr(5, cch.length() - 5 - 1) + "`o! `#**"));
+						ENetPacket * packetba = enet_packet_create(ban.data,
+							ban.len,
+							ENET_PACKET_FLAG_RELIABLE);
+						ENetPeer * currentPeer;
+						for (currentPeer = server->peers;
+							currentPeer < &server->peers[server->peerCount];
+							++currentPeer)
+						{
+							if (currentPeer->state != ENET_PEER_STATE_CONNECTED)
+								continue;
+							enet_peer_send(currentPeer, 0, packetba);
+						}
+
+						//enet_host_flush(server);
+						delete ban.data;
+						}*/
+					else if (str == "/fakeban") {
+					if (!isSuperAdmin(((PlayerInfo*)(peer->data))->rawName, ((PlayerInfo*)(peer->data))->tankIDPass)) break;
+					cout << "Fake Ban from " << ((PlayerInfo*)(peer->data))->displayName << endl;
+					GamePacket p = packetEnd(appendInt(appendString(appendString(appendString(appendString(createPacket(), "OnAddNotification"), "interface/science_button.rttex"), "`wWarning from `4Admin: `wYou've been `4BANNED `wfrom Growtopia for 720 days"), "audio/hub_open.wav"), 0));
+					ENetPacket * packet = enet_packet_create(p.data,
+						p.len,
+						ENET_PACKET_FLAG_RELIABLE);
+					ENetPeer * currentPeer;
+					for (currentPeer = server->peers;
+						currentPeer < &server->peers[server->peerCount];
+						++currentPeer)
+					{
+						if (currentPeer->state != ENET_PEER_STATE_CONNECTED)
+							continue;
+						enet_peer_send(currentPeer, 0, packet);
+					}
+					delete p.data;
+					//enet_host_flush(server);
+					}
+					else if (str == "/vipnick") {
+					if (!isVIP(((PlayerInfo*)(peer->data))->rawName, ((PlayerInfo*)(peer->data))->tankIDPass)) break;
+					cout << ((PlayerInfo*)(peer->data))->displayName << " nicked into a VIP"<< endl;
+					sendPlayerLeave(peer, (PlayerInfo*)(event.peer->data));
+					((PlayerInfo*)(peer->data))->currentWorld = "EXIT";
+					sendWorldOffers(peer);
+					string nick = ((PlayerInfo*)(peer->data))->displayName;
+					((PlayerInfo*)(peer->data))->displayName = ""+ nick +" <VIP>";
+
+					GamePacket ps = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "Your nickname has been changed! <VIP>"));
+					ENetPacket * packet = enet_packet_create(ps.data,
+						ps.len,
+						ENET_PACKET_FLAG_RELIABLE);
+
+					enet_peer_send(peer, 0, packet);
+					delete ps.data;
+					//enet_host_flush(server);
+					}
+					else if (str.substr(0, 6) == "/nick ") {
+					if (!isVIP(((PlayerInfo*)(peer->data))->rawName, ((PlayerInfo*)(peer->data))->tankIDPass)) break;
+					cout << ((PlayerInfo*)(peer->data))->displayName << "nicked into " << str.substr(6, cch.length() - 6 - 1) << endl;
+					sendPlayerLeave(peer, (PlayerInfo*)(event.peer->data));
+					((PlayerInfo*)(peer->data))->currentWorld = "EXIT";
+					sendWorldOffers(peer);
+
+					((PlayerInfo*)(peer->data))->displayName = str.substr(6, cch.length() - 6 - 1);
+
+					GamePacket ps = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "Your nickname has been changed!"));
+					ENetPacket * packet = enet_packet_create(ps.data,
+						ps.len,
+						ENET_PACKET_FLAG_RELIABLE);
+
+					enet_peer_send(peer, 0, packet);
+					delete ps.data;
+					//enet_host_flush(server);
+					}
+					else if (str == "/modnick") {
+					if (!isNormalAdmin(((PlayerInfo*)(peer->data))->rawName, ((PlayerInfo*)(peer->data))->tankIDPass)) break;
+					cout << ((PlayerInfo*)(peer->data))->displayName << " nicked into a Mod" << endl;
+					sendPlayerLeave(peer, (PlayerInfo*)(event.peer->data));
+					((PlayerInfo*)(peer->data))->currentWorld = "EXIT";
+					sendWorldOffers(peer);
+					string nick = ((PlayerInfo*)(peer->data))->displayName;
+					((PlayerInfo*)(peer->data))->displayName = "" + nick + " <Mod>";
+
+					GamePacket ps = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "Your nickname has been changed! <Mod>"));
+					ENetPacket * packet = enet_packet_create(ps.data,
+						ps.len,
+						ENET_PACKET_FLAG_RELIABLE);
+
+					enet_peer_send(peer, 0, packet);
+					delete ps.data;
+					//enet_host_flush(server);
+					}
+					else if (str == "/adminnick") {
+					if (!isSuperAdmin(((PlayerInfo*)(peer->data))->rawName, ((PlayerInfo*)(peer->data))->tankIDPass)) break;
+					cout << ((PlayerInfo*)(peer->data))->displayName << " nicked into a Mod" << endl;
+					sendPlayerLeave(peer, (PlayerInfo*)(event.peer->data));
+					((PlayerInfo*)(peer->data))->currentWorld = "EXIT";
+					sendWorldOffers(peer);
+					string nick = ((PlayerInfo*)(peer->data))->displayName;
+					((PlayerInfo*)(peer->data))->displayName = "" + nick + " <Admin>";
+
+					GamePacket ps = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "Your nickname has been changed! <Admin>"));
+					ENetPacket * packet = enet_packet_create(ps.data,
+						ps.len,
+						ENET_PACKET_FLAG_RELIABLE);
+
+					enet_peer_send(peer, 0, packet);
+					delete ps.data;
+					//enet_host_flush(server);
+					}
+					else if (str.substr(0, 6) == "/nick ") {
+					if (!isVIP(((PlayerInfo*)(peer->data))->rawName, ((PlayerInfo*)(peer->data))->tankIDPass)) break;
+					cout << ((PlayerInfo*)(peer->data))->displayName << "nicked into " << str.substr(6, cch.length() - 6 - 1) << endl;
+					sendPlayerLeave(peer, (PlayerInfo*)(event.peer->data));
+					((PlayerInfo*)(peer->data))->currentWorld = "EXIT";
+					sendWorldOffers(peer);
+
+					((PlayerInfo*)(peer->data))->displayName = str.substr(6, cch.length() - 6 - 1);
+
+					GamePacket ps = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "Your nickname has been changed!"));
+					ENetPacket * packet = enet_packet_create(ps.data,
+						ps.len,
+						ENET_PACKET_FLAG_RELIABLE);
+
+					enet_peer_send(peer, 0, packet);
+					delete ps.data;
+					//enet_host_flush(server);
+					}
+					else if (str == "/invis")
+					{
+						if (!isSuperAdmin(((PlayerInfo*)(peer->data))->rawName, ((PlayerInfo*)(peer->data))->tankIDPass)) break;
+						//string name = ((PlayerInfo*)(peer->data))->displayName;
+						((PlayerInfo*)(peer->data))->displayName = "";
+						GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "Invisible mode `2ON"));
+						ENetPacket * packet = enet_packet_create(p.data,
+							p.len,
+							ENET_PACKET_FLAG_RELIABLE);
+						enet_peer_send(peer, 0, packet);
+						delete p.data;
+						((PlayerInfo*)(event.peer->data))->canDoubleJump = true;
+						((PlayerInfo*)(event.peer->data))->canWalkInBlocks = true;
+						sendClothes(peer);
+						((PlayerInfo*)(peer->data))->cloth_face = 0;
+						sendPlayerLeave(peer, (PlayerInfo*)(event.peer->data));
+						((PlayerInfo*)(peer->data))->currentWorld = "EXIT";
+						sendWorldOffers(peer);
+						continue;
+
+					}
+					/*else if (str.substr(0, 10) == "/weather ")
+
+					{
+						GamePacket p = packetEnd(appendInt(appendString(createPacket(), "OnSetBaseWeather"), atoi(str.substr(10).c_str())));
+						ENetPacket * packet = enet_packet_create(p.data,
+							p.len,
+							ENET_PACKET_FLAG_RELIABLE);
+
+						enet_peer_send(peer, 0, packet);
+						delete p.data;
+						continue;
+
+					}*/
+					/*else if (str.substr(0, 6) == "/drop ")
+					{
+
+					//rl
+					sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? 1 : -1)), ((PlayerInfo*)(peer->data))->y, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
+					sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? 2 : -2)), ((PlayerInfo*)(peer->data))->y, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
+					sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? 3 : -3)), ((PlayerInfo*)(peer->data))->y, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
+					sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? 4 : -4)), ((PlayerInfo*)(peer->data))->y, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
+					sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? 5 : -5)), ((PlayerInfo*)(peer->data))->y, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
+					sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? -1 : 1)), ((PlayerInfo*)(peer->data))->y, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
+					sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? -2 : 2)), ((PlayerInfo*)(peer->data))->y, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
+					sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? -3 : 3)), ((PlayerInfo*)(peer->data))->y, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
+					sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? -4 : 4)), ((PlayerInfo*)(peer->data))->y, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
+					sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? -5 : 5)), ((PlayerInfo*)(peer->data))->y, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
+					sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? -5 : 5)), ((PlayerInfo*)(peer->data))->y, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
+
+					//up lr
+					sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? 1 : -1)), ((PlayerInfo*)(peer->data))->y - 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
+					sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? 2 : -2)), ((PlayerInfo*)(peer->data))->y - 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
+					sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? 3 : -3)), ((PlayerInfo*)(peer->data))->y - 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
+					sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? 4 : -4)), ((PlayerInfo*)(peer->data))->y - 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
+					sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? 5 : -5)), ((PlayerInfo*)(peer->data))->y - 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
+					sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? -1 : 1)), ((PlayerInfo*)(peer->data))->y - 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
+					sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? -2 : 2)), ((PlayerInfo*)(peer->data))->y - 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
+					sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? -3 : 3)), ((PlayerInfo*)(peer->data))->y - 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
+					sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? -4 : 4)), ((PlayerInfo*)(peer->data))->y - 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
+					sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? -5 : 5)), ((PlayerInfo*)(peer->data))->y - 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
+					sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? -5 : 5)), ((PlayerInfo*)(peer->data))->y - 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
+
+					//down lr
+
+					sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? 1 : -1)), ((PlayerInfo*)(peer->data))->y + 1, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
+					sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? 2 : -2)), ((PlayerInfo*)(peer->data))->y + 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
+					sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? 3 : -3)), ((PlayerInfo*)(peer->data))->y + 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
+					sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? 4 : -4)), ((PlayerInfo*)(peer->data))->y + 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
+					sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? 5 : -5)), ((PlayerInfo*)(peer->data))->y + 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
+					sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? -1 : 1)), ((PlayerInfo*)(peer->data))->y + 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
+					sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? -2 : 2)), ((PlayerInfo*)(peer->data))->y + 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
+					sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? -3 : 3)), ((PlayerInfo*)(peer->data))->y + 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
+					sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? -4 : 4)), ((PlayerInfo*)(peer->data))->y + 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
+					sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? -5 : 5)), ((PlayerInfo*)(peer->data))->y + 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
+					sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? -5 : 5)), ((PlayerInfo*)(peer->data))->y + 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
+					}*/
+					else if (str == "/count"){
+						int count = 0;
+						ENetPeer * currentPeer;
+						string name = "";
+						for (currentPeer = server->peers;
+							currentPeer < &server->peers[server->peerCount];
+							++currentPeer)
+						{
+							if (currentPeer->state != ENET_PEER_STATE_CONNECTED)
+								continue;
+							count++;
+						}
+						GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "There is "+std::to_string(count)+" people out of 1024 limit."));
+						ENetPacket * packet = enet_packet_create(p.data,
+							p.len,
+							ENET_PACKET_FLAG_RELIABLE);
+						enet_peer_send(peer, 0, packet);
+						delete p.data;
+						//enet_host_flush(server);
+					}
+					else if (str.substr(0, 5) == "/asb "){
+						if (!isSuperAdmin(((PlayerInfo*)(peer->data))->rawName, ((PlayerInfo*)(peer->data))->tankIDPass)) break;
+						cout << "ASB from " << ((PlayerInfo*)(peer->data))->rawName << " in world " << ((PlayerInfo*)(peer->data))->currentWorld << "with IP " << std::hex << peer->address.host << std::dec << " with message " << str.substr(5, cch.length() - 5 - 1) << endl;
+						GamePacket p = packetEnd(appendInt(appendString(appendString(appendString(appendString(createPacket(), "OnAddNotification"), "interface/atomic_button.rttex"), str.substr(4, cch.length() - 4 - 1).c_str()), "audio/hub_open.wav"), 0));
+						ENetPacket * packet = enet_packet_create(p.data,
+							p.len,
+							ENET_PACKET_FLAG_RELIABLE);
+						ENetPeer * currentPeer;
+						for (currentPeer = server->peers;
+							currentPeer < &server->peers[server->peerCount];
+							++currentPeer)
+						{
+							if (currentPeer->state != ENET_PEER_STATE_CONNECTED)
+								continue;
+							enet_peer_send(currentPeer, 0, packet);
+						}
+						
+						//enet_host_flush(server);
+						delete p.data;
+					}
+					else if (str.substr(0, 4) == "/id ") {
+					using namespace std::chrono;
+					if (((PlayerInfo*)(peer->data))->lastSB + 10000 < (duration_cast<milliseconds>(system_clock::now().time_since_epoch())).count())
+					{
+						((PlayerInfo*)(peer->data))->lastSB = (duration_cast<milliseconds>(system_clock::now().time_since_epoch())).count();
+					}
+					else {
+						GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "You are spamming id too fast, calm down."));
+						ENetPacket * packet = enet_packet_create(p.data,
+							p.len,
+							ENET_PACKET_FLAG_RELIABLE);
+
+						enet_peer_send(peer, 0, packet);
+						delete p.data;
+						//enet_host_flush(server);
+						continue;
+					}
+
+					string name = ((PlayerInfo*)(peer->data))->displayName;
+					GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "`w** `bItems ID`` from `$`2" + name + "```` ** :`` `9 " + str.substr(4, cch.length() - 4 - 1)));
 					string text = "action|play_sfx\nfile|audio/beep.wav\ndelayMS|0\n";
 					BYTE* data = new BYTE[5 + text.length()];
 					BYTE zero = 0;
@@ -3358,7 +3651,7 @@ int _tmain(int argc, _TCHAR* argv[])
 							((PlayerInfo*)(peer->data))->lastSB = (duration_cast<milliseconds>(system_clock::now().time_since_epoch())).count();
 						}
 						else {
-							GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "Wait a minute before using the SB command again!"));
+							GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "You are spamming sb too fast, calm down."));
 							ENetPacket * packet = enet_packet_create(p.data,
 								p.len,
 								ENET_PACKET_FLAG_RELIABLE);
@@ -3370,7 +3663,7 @@ int _tmain(int argc, _TCHAR* argv[])
 						}
 
 						string name = ((PlayerInfo*)(peer->data))->displayName;
-						GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "`w** `5Super-Broadcast`` from `o`2" + name + "```` (in `o" + ((PlayerInfo*)(peer->data))->currentWorld + "``) ** :`` `# " + str.substr(4, cch.length() - 4 - 1)));
+						GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "`w** `5Super-Broadcast`` from `$`2" + name + "```` (in `$" + ((PlayerInfo*)(peer->data))->currentWorld + "``) ** :`` `# " + str.substr(4, cch.length() - 4 - 1)));
 						string text = "action|play_sfx\nfile|audio/beep.wav\ndelayMS|0\n";
 						BYTE* data = new BYTE[5 + text.length()];
 						BYTE zero = 0;
@@ -3408,32 +3701,116 @@ int _tmain(int argc, _TCHAR* argv[])
 						delete data;
 						delete p.data;
 					}
-					else if (str.substr(0, 5) == "/asb ") {
-					if (!canSB(((PlayerInfo*)(peer->data))->rawName, ((PlayerInfo*)(peer->data))->tankIDPass)) continue;
-					cout << "ASB from " << ((PlayerInfo*)(peer->data))->rawName << " in world " << ((PlayerInfo*)(peer->data))->currentWorld << "with IP " << std::hex << peer->address.host << std::dec << " with message " << str.substr(5, cch.length() - 5 - 1) << endl;
-					GamePacket p = packetEnd(appendInt(appendString(appendString(appendString(appendString(createPacket(), "OnAddNotification"), "interface/atomic_button.rttex"), str.substr(4, cch.length() - 4 - 1).c_str()), "audio/hub_open.wav"), 0));
-					ENetPacket * packet = enet_packet_create(p.data,
-						p.len,
-						ENET_PACKET_FLAG_RELIABLE);
+					else if (str.substr(0, 5) == "/msb ") {
+					using namespace std::chrono;
+					if (!isNormalAdmin(((PlayerInfo*)(peer->data))->rawName, ((PlayerInfo*)(peer->data))->tankIDPass)) break;
+					string name = ((PlayerInfo*)(peer->data))->displayName;
+					GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "`w** `rModerator-Broadcast`` from `$`2" + name + "```` (in `4HIDDEN!``) ** :`` `6 " + str.substr(4, cch.length() - 4 - 1)));
+					string text = "action|play_sfx\nfile|audio/beep.wav\ndelayMS|0\n";
+					BYTE* data = new BYTE[5 + text.length()];
+					BYTE zero = 0;
+					int type = 3;
+					memcpy(data, &type, 4);
+					memcpy(data + 4, text.c_str(), text.length());
+					memcpy(data + 4 + text.length(), &zero, 1);
 					ENetPeer * currentPeer;
+
 					for (currentPeer = server->peers;
 						currentPeer < &server->peers[server->peerCount];
 						++currentPeer)
 					{
 						if (currentPeer->state != ENET_PEER_STATE_CONNECTED)
 							continue;
+						if (!((PlayerInfo*)(currentPeer->data))->radio)
+							continue;
+						ENetPacket * packet = enet_packet_create(p.data,
+							p.len,
+							ENET_PACKET_FLAG_RELIABLE);
+
 						enet_peer_send(currentPeer, 0, packet);
+
+
+
+
+						ENetPacket * packet2 = enet_packet_create(data,
+							5 + text.length(),
+							ENET_PACKET_FLAG_RELIABLE);
+
+						enet_peer_send(currentPeer, 0, packet2);
+
+						//enet_host_flush(server);
 					}
-					//enet_host_flush(server);
+					delete data;
+					delete p.data;
+					}
+					else if (str.substr(0, 5) == "/vsb ") {
+					using namespace std::chrono;
+					/*if (((PlayerInfo*)(peer->data))->lastSB + 45000 < (duration_cast<milliseconds>(system_clock::now().time_since_epoch())).count())
+					{
+						((PlayerInfo*)(peer->data))->lastSB = (duration_cast<milliseconds>(system_clock::now().time_since_epoch())).count();
+					}
+					else {
+						GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "You are spamming sb too fast, calm down."));
+						ENetPacket * packet = enet_packet_create(p.data,
+							p.len,
+							ENET_PACKET_FLAG_RELIABLE);
+
+						enet_peer_send(peer, 0, packet);
+						delete p.data;
+						//enet_host_flush(server);
+						continue;
+					}*/
+					if (((PlayerInfo*)(peer->data))->lastVSB + 10000 < (duration_cast<milliseconds>(system_clock::now().time_since_epoch())).count())
+					{
+						((PlayerInfo*)(peer->data))->lastVSB = (duration_cast<milliseconds>(system_clock::now().time_since_epoch())).count();
+					}
+					if (!isVIP(((PlayerInfo*)(peer->data))->rawName, ((PlayerInfo*)(peer->data))->tankIDPass)) break;
+					string name = ((PlayerInfo*)(peer->data))->displayName;
+					GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "`w** `9VIP-Broadcast`` from `$`2" + name + "```` (in `$" + ((PlayerInfo*)(peer->data))->currentWorld + "``) ** :`` `6 " + str.substr(4, cch.length() - 4 - 1)));
+					string text = "action|play_sfx\nfile|audio/beep.wav\ndelayMS|0\n";
+					BYTE* data = new BYTE[5 + text.length()];
+					BYTE zero = 0;
+					int type = 3;
+					memcpy(data, &type, 4);
+					memcpy(data + 4, text.c_str(), text.length());
+					memcpy(data + 4 + text.length(), &zero, 1);
+					ENetPeer * currentPeer;
+
+					for (currentPeer = server->peers;
+						currentPeer < &server->peers[server->peerCount];
+						++currentPeer)
+					{
+						if (currentPeer->state != ENET_PEER_STATE_CONNECTED)
+							continue;
+						if (!((PlayerInfo*)(currentPeer->data))->radio)
+							continue;
+						ENetPacket * packet = enet_packet_create(p.data,
+							p.len,
+							ENET_PACKET_FLAG_RELIABLE);
+
+						enet_peer_send(currentPeer, 0, packet);
+
+
+
+
+						ENetPacket * packet2 = enet_packet_create(data,
+							5 + text.length(),
+							ENET_PACKET_FLAG_RELIABLE);
+
+						enet_peer_send(currentPeer, 0, packet2);
+
+						//enet_host_flush(server);
+					}
+					delete data;
 					delete p.data;
 					}
 					else if (str.substr(0, 6) == "/radio") {
 						GamePacket p;
 						if (((PlayerInfo*)(peer->data))->radio) {
-							p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "You won't see broadcasts anymore."));
+							p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "You now won't recieve broadcast anymore."));
 							((PlayerInfo*)(peer->data))->radio = false;
 						} else {
-							p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "You will now see broadcasts again."));
+							p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "You will now recieve broadcasts again."));
 							((PlayerInfo*)(peer->data))->radio = true;
 						}
 
@@ -3445,27 +3822,8 @@ int _tmain(int argc, _TCHAR* argv[])
 						delete p.data;
 						//enet_host_flush(server);
 					}
-					else if (str == "/fakeban") {
-					if (!isAdmin(((PlayerInfo*)(peer->data))->rawName, ((PlayerInfo*)(peer->data))->tankIDPass)) break;
-					cout << "Fake Ban from " << ((PlayerInfo*)(peer->data))->displayName << endl;
-					GamePacket p = packetEnd(appendInt(appendString(appendString(appendString(appendString(createPacket(), "OnAddNotification"), "interface/science_button.rttex"), "`wWarning from `4Admin: `wYou've been `4BANNED `wfrom Growtopia for 720 days"), "audio/hub_open.wav"), 0));
-					ENetPacket * packet = enet_packet_create(p.data,
-						p.len,
-						ENET_PACKET_FLAG_RELIABLE);
-					ENetPeer * currentPeer;
-					for (currentPeer = server->peers;
-						currentPeer < &server->peers[server->peerCount];
-						++currentPeer)
-					{
-						if (currentPeer->state != ENET_PEER_STATE_CONNECTED)
-							continue;
-						enet_peer_send(currentPeer, 0, packet);
-					}
-					delete p.data;
-					//enet_host_flush(server);
-					}
 					else if (str.substr(0, 6) == "/reset"){
-						if (!isAdmin(((PlayerInfo*)(peer->data))->rawName, ((PlayerInfo*)(peer->data))->tankIDPass)) break;
+						if (!isSuperAdmin(((PlayerInfo*)(peer->data))->rawName, ((PlayerInfo*)(peer->data))->tankIDPass)) break;
 						cout << "Restart from " << ((PlayerInfo*)(peer->data))->displayName << endl;
 						GamePacket p = packetEnd(appendInt(appendString(appendString(appendString(appendString(createPacket(), "OnAddNotification"), "interface/science_button.rttex"), "Restarting soon!"), "audio/mp3/suspended.mp3"), 0));
 						ENetPacket * packet = enet_packet_create(p.data,
@@ -3485,12 +3843,13 @@ int _tmain(int argc, _TCHAR* argv[])
 					}
 
 					/*else if (str.substr(0, 7) == "/clear "){
-						if (!canClear(((PlayerInfo*)(peer->data))->rawName, ((PlayerInfo*)(peer->data))->tankIDPass)) continue;
+						if (!canClear(((PlayerInfo*)(peer->data))->
+						rawName, ((PlayerInfo*)(peer->data))->tankIDPass)) continue;
 						cout << "World cleared by " << ((PlayerInfo*)(peer->data))->tankIDName << endl;
 						WorldInfo* wrld = getPlyersWorld(peer);
 						string wName = str.substr(4, cch.length() - 4 - 1);
 						for (auto & c : wName) c = toupper(c);
-						for (int i = 0; i < worlds.size(); i++)
+						for (int i = 0; i < wrld.size(); i++)
 						{
 							if (wrld == NULL) continue;
 							if (wName == wrld->name)
@@ -3537,8 +3896,8 @@ int _tmain(int argc, _TCHAR* argv[])
 								enet_host_flush(server);
 							}
 						}
-					}
-					else if (str.substr(0, 6) == "/clear"){
+					}*/
+					/*else if (str.substr(0, 6) == "/clear"){
 						if (!canClear(((PlayerInfo*)(peer->data))->rawName, ((PlayerInfo*)(peer->data))->tankIDPass)) continue;
 						cout << "World cleared by " << ((PlayerInfo*)(peer->data))->tankIDName << endl;
 						WorldInfo* wrld = getPlyersWorld(peer);
@@ -3592,7 +3951,8 @@ int _tmain(int argc, _TCHAR* argv[])
 					}*/
 					else if (str == "/unmod")
 					{
-					    return 0;
+						((PlayerInfo*)(peer->data))->canWalkInBlocks = false;
+						sendState(peer);
 						/*PlayerMoving data;
 						data.packetType = 0x14;
 						data.characterState = 0x0; // animation
@@ -3673,12 +4033,13 @@ int _tmain(int argc, _TCHAR* argv[])
 					}
 					
 			}
-				if (!((PlayerInfo*)(event.peer->data))->isIn)
-				{
-					GamePacket p = packetEnd(appendString(appendString(appendString(appendString(appendInt(appendString(createPacket(), "OnSuperMainStartAcceptLogonHrdxs47254722215a"), -325598665), "cdn.growtopiagame.com"), "cache/"), "cc.cz.madkite.freedom org.aqua.gg idv.aqua.bulldog com.cih.gamecih2 com.cih.gamecih com.cih.game_cih cn.maocai.gamekiller com.gmd.speedtime org.dax.attack com.x0.strai.frep com.x0.strai.free org.cheatengine.cegui org.sbtools.gamehack com.skgames.traffikrider org.sbtoods.gamehaca com.skype.ralder org.cheatengine.cegui.xx.multi1458919170111 com.prohiro.macro me.autotouch.autotouch com.cygery.repetitouch.free com.cygery.repetitouch.pro com.proziro.zacro com.slash.gamebuster"), "proto=42|choosemusic=audio/mp3/about_theme.mp3|active_holiday=0|"));
-					//for (int i = 0; i < p.len; i++) cout << (int)*(p.data + i) << " ";
-					ENetPacket * packet = enet_packet_create(p.data,
-						p.len,
+			if (!((PlayerInfo*)(event.peer->data))->isIn)
+			{
+				
+				GamePacket p = packetEnd(appendString(appendString(appendString(appendString(appendInt(appendString(createPacket(), "OnSuperMainStartAcceptLogonHrdxs47254722215a"), -703607114), "cdn.growtopiagame.com"), "cache/"), "cc.cz.madkite.freedom org.aqua.gg idv.aqua.bulldog com.cih.gamecih2 com.cih.gamecih com.cih.game_cih cn.maocai.gamekiller com.gmd.speedtime org.dax.attack com.x0.strai.frep com.x0.strai.free org.cheatengine.cegui org.sbtools.gamehack com.skgames.traffikrider org.sbtoods.gamehaca com.skype.ralder org.cheatengine.cegui.xx.multi1458919170111 com.prohiro.macro me.autotouch.autotouch com.cygery.repetitouch.free com.cygery.repetitouch.pro com.proziro.zacro com.slash.gamebuster"), "proto=42|choosemusic=audio/mp3/about_theme.mp3|active_holiday=0|"));
+				//for (int i = 0; i < p.len; i++) cout << (int)*(p.data + i) << " ";
+				ENetPacket * packet = enet_packet_create(p.data,
+					p.len,
 						ENET_PACKET_FLAG_RELIABLE);
 					enet_peer_send(peer, 0, packet);
 					
@@ -3710,7 +4071,7 @@ int _tmain(int argc, _TCHAR* argv[])
 					if (!((PlayerInfo*)(event.peer->data))->haveGrowId)
 					{
 						((PlayerInfo*)(event.peer->data))->rawName = "";
-						((PlayerInfo*)(event.peer->data))->displayName = "`4[`4GUEST`4] `w" + PlayerDB::fixColors(((PlayerInfo*)(event.peer->data))->requestedName.substr(0, ((PlayerInfo*)(event.peer->data))->requestedName.length()>15?15:((PlayerInfo*)(event.peer->data))->requestedName.length()));
+						((PlayerInfo*)(event.peer->data))->displayName = "`4Not Registered_`w" + PlayerDB::fixColors(((PlayerInfo*)(event.peer->data))->requestedName.substr(0, ((PlayerInfo*)(event.peer->data))->requestedName.length()>15?15:((PlayerInfo*)(event.peer->data))->requestedName.length()));
 					}
 					else {
 						((PlayerInfo*)(event.peer->data))->rawName = PlayerDB::getProperName(((PlayerInfo*)(event.peer->data))->tankIDName);
@@ -3726,17 +4087,16 @@ int _tmain(int argc, _TCHAR* argv[])
 							enet_peer_disconnect_later(peer, 0);
 						}
 						if (logStatus == 1) {
-							//GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "`rYou have successfully logged into your account!``"));
-							GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnParticleEffect"), "123"));
+							/*GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "`rYou has successfully logged to your account!``"));
 							ENetPacket * packet = enet_packet_create(p.data,
 								p.len,
 								ENET_PACKET_FLAG_RELIABLE);
 							enet_peer_send(peer, 0, packet);
-							delete p.data;
+							delete p.data;*/
 							((PlayerInfo*)(event.peer->data))->displayName = ((PlayerInfo*)(event.peer->data))->tankIDName;
 						}
 						else {
-							GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "`rUnable to log on: `oThat `wGrowID `odoesn't seem vaild, or the password is wrong. if you don't have one, click `wCancle`o, un-check `w'I have a GrowID'`o, then click `wConnect`o.``"));
+							GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "`rWrong username or password!``"));
 							ENetPacket * packet = enet_packet_create(p.data,
 								p.len,
 								ENET_PACKET_FLAG_RELIABLE);
@@ -3747,7 +4107,7 @@ int _tmain(int argc, _TCHAR* argv[])
 #else
 						
 						((PlayerInfo*)(event.peer->data))->displayName = PlayerDB::fixColors(((PlayerInfo*)(event.peer->data))->tankIDName.substr(0, ((PlayerInfo*)(event.peer->data))->tankIDName.length()>18 ? 18 : ((PlayerInfo*)(event.peer->data))->tankIDName.length()));
-						if (((PlayerInfo*)(event.peer->data))->displayName.length() < 3) ((PlayerInfo*)(event.peer->data))->displayName = "Person that doesn't know how the name looks!";
+						if (((PlayerInfo*)(event.peer->data))->displayName.length() < 3) ((PlayerInfo*)(event.peer->data))->displayName = "Person that don't know how name looks!";
 #endif
 					}
 					for (char c : ((PlayerInfo*)(event.peer->data))->displayName) if (c < 0x20 || c>0x7A) ((PlayerInfo*)(event.peer->data))->displayName = "Bad characters in name, remove them!";
@@ -3756,11 +4116,27 @@ int _tmain(int argc, _TCHAR* argv[])
 					{
 						((PlayerInfo*)(event.peer->data))->country = "us";
 					}
-					if (getAdminLevel(((PlayerInfo*)(event.peer->data))->rawName, ((PlayerInfo*)(event.peer->data))->tankIDPass) > 0)
+					if (isCustomFlag1(((PlayerInfo*)(event.peer->data))->rawName, ((PlayerInfo*)(event.peer->data))->tankIDPass) > 0)
 					{
-						((PlayerInfo*)(event.peer->data))->country = "../cash_icon_overlay";
+						((PlayerInfo*)(event.peer->data))->country = "../flags/th";
 					}
-					if (isSuperAdmin(((PlayerInfo*)(event.peer->data))->rawName, ((PlayerInfo*)(event.peer->data))->tankIDPass) > 0)
+					if (isCustomFlag2(((PlayerInfo*)(event.peer->data))->rawName, ((PlayerInfo*)(event.peer->data))->tankIDPass) > 0)
+					{
+						((PlayerInfo*)(event.peer->data))->country = "../rtsoft_logo";//rtsoft_logo
+					}
+					if (isVIPFlag(((PlayerInfo*)(event.peer->data))->rawName, ((PlayerInfo*)(event.peer->data))->tankIDPass) > 0)
+					{
+						((PlayerInfo*)(event.peer->data))->country = "../token_icon_overlay";
+					}
+					if (isNormalAdminFlag(((PlayerInfo*)(event.peer->data))->rawName, ((PlayerInfo*)(event.peer->data))->tankIDPass) > 0)
+					{
+						((PlayerInfo*)(event.peer->data))->country = "../particle/star";
+					}
+					if (isSuperAdminFlag(((PlayerInfo*)(event.peer->data))->rawName, ((PlayerInfo*)(event.peer->data))->tankIDPass) > 0)
+					{
+						((PlayerInfo*)(event.peer->data))->country = "../flags/lg";
+					}
+					if (isDevFlag(((PlayerInfo*)(event.peer->data))->rawName, ((PlayerInfo*)(event.peer->data))->tankIDPass) > 0)
 					{
 						((PlayerInfo*)(event.peer->data))->country = "../atomic_button";
 					}
@@ -3802,7 +4178,7 @@ int _tmain(int argc, _TCHAR* argv[])
 							p.len,
 							ENET_PACKET_FLAG_RELIABLE);
 						enet_peer_send(currentPeer, 0, packet);
-						
+
 						enet_host_flush(server);
 						delete p.data;
 					}*/
@@ -3817,12 +4193,20 @@ int _tmain(int argc, _TCHAR* argv[])
 						count++;
 					}
 					string name = ((PlayerInfo*)(peer->data))->displayName;
-					GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "Welcome back, `w" + name + "`o. No friends are online."));
-				    GamePacket p2 = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "Where would you like to go? (`w" + std::to_string(count) + " `oonline)"));
-					ENetPacket * packet = enet_packet_create(p.data,p.len, ENET_PACKET_FLAG_RELIABLE);
+					GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "Server made by `bJordan `o( Jordan#0495 )"));
+					GamePacket p2 = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "Original open source code by `rGrowtopia Noobs"));
+					GamePacket p4 = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "Welcome back, `w" + name + "`o. No friends are online."));
+					GamePacket p5 = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "Where would you like to go? (`w" + std::to_string(count) + " `oonline)"));
+					ENetPacket * packet = enet_packet_create(p.data, p.len, ENET_PACKET_FLAG_RELIABLE);
 					enet_peer_send(peer, 0, packet);
 					ENetPacket * packet2 = enet_packet_create(p2.data, p2.len, ENET_PACKET_FLAG_RELIABLE);
 					enet_peer_send(peer, 0, packet2);
+					ENetPacket * packet3 = enet_packet_create(p3.data, p3.len, ENET_PACKET_FLAG_RELIABLE);
+					enet_peer_send(peer, 0, packet3);
+					ENetPacket * packet4 = enet_packet_create(p4.data, p4.len, ENET_PACKET_FLAG_RELIABLE);
+					enet_peer_send(peer, 0, packet4);
+					ENetPacket * packet5 = enet_packet_create(p5.data, p5.len, ENET_PACKET_FLAG_RELIABLE);
+					enet_peer_send(peer, 0, packet5);
 					//enet_host_flush(server);
 					delete p.data;
 					PlayerInventory inventory;
@@ -3836,8 +4220,8 @@ int _tmain(int argc, _TCHAR* argv[])
 					((PlayerInfo*)(event.peer->data))->inventory = inventory;
 
 					{
-						//GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnDialogRequest"), "set_default_color|`o\n\nadd_label_with_icon|big|`wThe Growtopia Gazette``|left|5016|\n\nadd_spacer|small|\n\nadd_image_button|banner|interface/large/news_banner.rttex|noflags|||\n\nadd_spacer|small|\n\nadd_textbox|`wSeptember 10:`` `5Surgery Stars end!``|left|\n\nadd_spacer|small|\n\n\n\nadd_textbox|Hello Growtopians,|left|\n\nadd_spacer|small|\n\n\n\nadd_textbox|Surgery Stars is over! We hope you enjoyed it and claimed all your well-earned Summer Tokens!|left|\n\nadd_spacer|small|\n\nadd_spacer|small|\n\nadd_textbox|As we announced earlier, this month we are releasing the feature update a bit later, as we're working on something really cool for the monthly update and we're convinced that the wait will be worth it!|left|\n\nadd_spacer|small|\n\nadd_textbox|Check the Forum here for more information!|left|\n\nadd_spacer|small|\n\nadd_url_button|comment|`wSeptember Updates Delay``|noflags|https://www.growtopiagame.com/forums/showthread.php?510657-September-Update-Delay&p=3747656|Open September Update Delay Announcement?|0|0|\n\nadd_spacer|small|\n\nadd_spacer|small|\n\nadd_textbox|Also, we're glad to invite you to take part in our official Growtopia survey!|left|\n\nadd_spacer|small|\n\nadd_url_button|comment|`wTake Survey!``|noflags|https://ubisoft.ca1.qualtrics.com/jfe/form/SV_1UrCEhjMO7TKXpr?GID=26674|Open the browser to take the survey?|0|0|\n\nadd_spacer|small|\n\nadd_textbox|Click on the button above and complete the survey to contribute your opinion to the game and make Growtopia even better! Thanks in advance for taking the time, we're looking forward to reading your feedback!|left|\n\nadd_spacer|small|\n\nadd_spacer|small|\n\nadd_textbox|And for those who missed PAW, we made a special video sneak peek from the latest PAW fashion show, check it out on our official YouTube channel! Yay!|left|\n\nadd_spacer|small|\n\nadd_url_button|comment|`wPAW 2018 Fashion Show``|noflags|https://www.youtube.com/watch?v=5i0IcqwD3MI&feature=youtu.be|Open the Growtopia YouTube channel for videos and tutorials?|0|0|\n\nadd_spacer|small|\n\nadd_textbox|Lastly, check out other September updates:|left|\n\nadd_spacer|small|\n\nadd_label_with_icon|small|IOTM: The Sorcerer's Tunic of Mystery|left|24|\n\nadd_label_with_icon|small|New Legendary Summer Clash Branch|left|24|\n\nadd_spacer|small|\n\nadd_textbox|`o- The Growtopia Team``|left|\n\nadd_spacer|small|\n\nadd_spacer|small|\n\n\n\n\n\nadd_url_button|comment|`wOfficial YouTube Channel``|noflags|https://www.youtube.com/c/GrowtopiaOfficial|Open the Growtopia YouTube channel for videos and tutorials?|0|0|\n\nadd_url_button|comment|`wSeptember's IOTM: `8Sorcerer's Tunic of Mystery!````|noflags|https://www.growtopiagame.com/forums/showthread.php?450065-Item-of-the-Month&p=3392991&viewfull=1#post3392991|Open the Growtopia website to see item of the month info?|0|0|\n\nadd_spacer|small|\n\nadd_label_with_icon|small|`4WARNING:`` `5Drop games/trust tests`` and betting games (like `5Casinos``) are not allowed and will result in a ban!|left|24|\n\nadd_label_with_icon|small|`4WARNING:`` Using any kind of `5hacked client``, `5spamming/text pasting``, or `5bots`` (even with an alt) will likely result in losing `5ALL`` your accounts. Seriously.|left|24|\n\nadd_label_with_icon|small|`4WARNING:`` `5NEVER enter your GT password on a website (fake moderator apps, free gemz, etc) - it doesn't work and you'll lose all your stuff!|left|24|\n\nadd_spacer|small|\n\nadd_url_button|comment|`wGrowtopia on Facebook``|noflags|http://growtopiagame.com/facebook|Open the Growtopia Facebook page in your browser?|0|0|\n\nadd_spacer|small|\n\nadd_button|rules|`wHelp - Rules - Privacy Policy``|noflags|0|0|\n\n\nadd_quick_exit|\n\nadd_spacer|small|\nadd_url_button|comment|`wVisit Growtopia Forums``|noflags|http://www.growtopiagame.com/forums|Visit the Growtopia forums?|0|0|\nadd_spacer|small|\nadd_url_button||`wWOTD: `1THELOSTGOLD`` by `#iWasToD````|NOFLAGS|OPENWORLD|THELOSTGOLD|0|0|\nadd_spacer|small|\nadd_url_button||`wVOTW: `1Yodeling Kid - Growtopia Animation``|NOFLAGS|https://www.youtube.com/watch?v=UMoGmnFvc58|Watch 'Yodeling Kid - Growtopia Animation' by HyerS on YouTube?|0|0|\nend_dialog|gazette||OK|"));
-						GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnDialogRequest"), "set_default_color|`o\n\nadd_label_with_icon|big|`wGrowtopia TH Private Server``|left|5016||\n\nadd_spacer|small|\n\nadd_label_with_icon|small|`2UPDATES:`` `wFixed Crash Bug|left|112|\nadd_label_with_icon|small|`4WARNING:`` `5Worlds (and accounts)`` might be deleted at any time if database issues appear (once per week).|left|780|\nadd_label_with_icon|small|`4WARNING:`` `5Accounts`` are in beta, bugs may appear and they will be probably deleted often, because of new account updates, which will cause database incompatibility.|left|780|\nadd_spacer|small|\n\nadd_url_button||``Youtube: `1Developer's Channel``|NOFLAGS|https://www.youtube.com/nitespicy|Open link?|0|0|\nadd_url_button||``Discord: `1Server Discord``|NOFLAGS|https://discord.gg/kkZtp3Q|Open link?|0|0|\nadd_url_button||``Items: `1Item database by Nenkai``|NOFLAGS|https://raw.githubusercontent.com/Nenkai/GrowtopiaItemDatabase/master/GrowtopiaItemDatabase/CoreData.txt|Open link?|0|0|\nadd_textbox|Server IP : 192.168.1.6|small|\nadd_textbox|Growtopia TH version 1.100|small|\nadd_quick_exit|\nend_dialog|gazette||OK|"));
+						//GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnDialogRequest"), "set_default_color|`o\n\nadd_label_with_icon|big|`wThe Growtopia Gazette``|left|5016|\n\nadd_spacer|small|\n\nadd_image_button|banner|interface/large/news_banner.rttex|noflags|||\n\nadd_spacer|small|\n\nadd_textbox|`wSeptember 10:`` `5Surgery Stars end!``|left|\n\nadd_spacer|small|\n\n\n\nadd_textbox|Hello Growtopians,|left|\n\nadd_spacer|small|\n\n\n\nadd_textbox|Surgery Stars is over! We hope you enjoyed it and claimed all your well-earned Summer Tokens!|left|\n\nadd_spacer|small|\n\nadd_spacer|small|\n\nadd_textbox|As we announced earlier, this month we are releasing the feature update a bit later, as we're working on something really cool for the monthly update and we're convinced that the wait will be worth it!|left|\n\nadd_spacer|small|\n\nadd_textbox|Check the Forum here for more information!|left|\n\nadd_spacer|small|\n\nadd_url_button|comment|`wSeptember Updates Delay``|noflags|https://www.growtopiagame.com/forums/showthread.php?510657-September-Update-Delay&p=3747656|Open September Update Delay Announcement?|0|0|\n\nadd_spacer|small|\n\nadd_spacer|small|\n\nadd_textbox|Also, we're glad to invite you to take part in our official Growtopia survey!|left|\n\nadd_spacer|small|\n\nadd_url_button|comment|`wTake Survey!``|noflags|https://ubisoft.ca1.qualtrics.com/jfe/form/SV_1UrCEhjMO7TKXpr?GID=26674|Open the browser to take the survey?|0|0|\n\nadd_spacer|small|\n\nadd_textbox|Click on the button above and complete the survey to contribute your opinion to the game and make Growtopia even better! Thanks in advance for taking the time, we're looking forward to reading your feedback!|left|\n\nadd_spacer|small|\n\nadd_spacer|small|\n\nadd_textbox|And for those who missed PAW, we made a special video sneak peek from the latest PAW fashion show, check it out on our official YouTube channel! Yay!|left|\n\nadd_spacer|small|\n\nadd_url_button|comment|`wPAW 2018 Fashion Show``|noflags|https://www.youtube.com/watch?v=5i0IcqwD3MI&feature=youtu.be|Open the Growtopia YouTube channel for videos and tutorials?|0|0|\n\nadd_spacer|small|\n\nadd_textbox|Lastly, check out other September updates:|left|\n\nadd_spacer|small|\n\nadd_label_with_icon|small|IOTM: The Sorcerer's Tunic of Mystery|left|24|\n\nadd_label_with_icon|small|New Legendary Summer Clash Branch|left|24|\n\nadd_spacer|small|\n\nadd_textbox|`$- The Growtopia Team``|left|\n\nadd_spacer|small|\n\nadd_spacer|small|\n\n\n\n\n\nadd_url_button|comment|`wOfficial YouTube Channel``|noflags|https://www.youtube.com/c/GrowtopiaOfficial|Open the Growtopia YouTube channel for videos and tutorials?|0|0|\n\nadd_url_button|comment|`wSeptember's IOTM: `8Sorcerer's Tunic of Mystery!````|noflags|https://www.growtopiagame.com/forums/showthread.php?450065-Item-of-the-Month&p=3392991&viewfull=1#post3392991|Open the Growtopia website to see item of the month info?|0|0|\n\nadd_spacer|small|\n\nadd_label_with_icon|small|`4WARNING:`` `5Drop games/trust tests`` and betting games (like `5Casinos``) are not allowed and will result in a ban!|left|24|\n\nadd_label_with_icon|small|`4WARNING:`` Using any kind of `5hacked client``, `5spamming/text pasting``, or `5bots`` (even with an alt) will likely result in losing `5ALL`` your accounts. Seriously.|left|24|\n\nadd_label_with_icon|small|`4WARNING:`` `5NEVER enter your GT password on a website (fake moderator apps, free gemz, etc) - it doesn't work and you'll lose all your stuff!|left|24|\n\nadd_spacer|small|\n\nadd_url_button|comment|`wGrowtopia on Facebook``|noflags|http://growtopiagame.com/facebook|Open the Growtopia Facebook page in your browser?|0|0|\n\nadd_spacer|small|\n\nadd_button|rules|`wHelp - Rules - Privacy Policy``|noflags|0|0|\n\n\nadd_quick_exit|\n\nadd_spacer|small|\nadd_url_button|comment|`wVisit Growtopia Forums``|noflags|http://www.growtopiagame.com/forums|Visit the Growtopia forums?|0|0|\nadd_spacer|small|\nadd_url_button||`wWOTD: `1THELOSTGOLD`` by `#iWasToD````|NOFLAGS|OPENWORLD|THELOSTGOLD|0|0|\nadd_spacer|small|\nadd_url_button||`wVOTW: `1Yodeling Kid - Growtopia Animation``|NOFLAGS|https://www.youtube.com/watch?v=UMoGmnFvc58|Watch 'Yodeling Kid - Growtopia Animation' by HyerS on YouTube?|0|0|\nend_dialog|gazette||OK|"));
+						GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnDialogRequest"), "set_default_color|`o\n\nadd_label_with_icon|big|`wGrowtopia TH Private Server``|left|5016||\n\nadd_spacer|small|\n\nadd_label_with_icon|small|`2UPDATES:`` `wFixed Crash Bug|left|112|\nadd_label_with_icon|small|`4WARNING:`` `5Worlds (and accounts)`` might be deleted at any time if database issues appear (once per week).|left|780|\nadd_label_with_icon|small|`4WARNING:`` `5Accounts`` are in beta, bugs may appear and they will be probably deleted often, because of new account updates, which will cause database incompatibility.|left|780|\nadd_spacer|small|\n\nadd_url_button||``Youtube: `1Developer's Channel``|NOFLAGS|https://www.youtube.com/nitespicy|Open link?|0|0|\nadd_url_button||``Discord: `1Server Discord``|NOFLAGS|https://discord.gg/kkZtp3Q|Open link?|0|0|\nadd_url_button||``Items: `1Item database by Nenkai``|NOFLAGS|https://raw.githubusercontent.com/Nenkai/GrowtopiaItemDatabase/master/GrowtopiaItemDatabase/CoreData.txt|Open link?|0|0|\nadd_textbox|Server IP : 103.91.204.176|small|\nadd_textbox|Growtopia TH version 2.000|small|\nadd_quick_exit|\nend_dialog|gazette||OK|"));
 						ENetPacket * packet = enet_packet_create(p.data,
 							p.len,
 							ENET_PACKET_FLAG_RELIABLE);
@@ -3877,7 +4261,7 @@ int _tmain(int argc, _TCHAR* argv[])
 					if (id == "name" && isJoinReq)
 					{
 #ifdef TOTAL_LOG
-						cout << "`5Entering some world..." << endl;
+						cout << "Entering some world..." << endl;
 #endif
 						try {
 							WorldInfo info = worldDB.get(act);
@@ -3971,7 +4355,7 @@ int _tmain(int argc, _TCHAR* argv[])
 						catch (int e) {
 							if (e == 1) {
 								((PlayerInfo*)(peer->data))->currentWorld = "EXIT";
-								GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "You have exited the world."));
+								GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "You are in EXIT!"));
 								ENetPacket * packet = enet_packet_create(p.data,
 									p.len,
 									ENET_PACKET_FLAG_RELIABLE);
@@ -3981,7 +4365,7 @@ int _tmain(int argc, _TCHAR* argv[])
 							}
 							else if (e == 2) {
 								((PlayerInfo*)(peer->data))->currentWorld = "EXIT";
-								GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "You have entered bad characters in the world name!"));
+								GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "You have entered bad characters to world name!"));
 								ENetPacket * packet = enet_packet_create(p.data,
 									p.len,
 									ENET_PACKET_FLAG_RELIABLE);
@@ -3991,7 +4375,7 @@ int _tmain(int argc, _TCHAR* argv[])
 							}
 							else if (e == 3) {
 								((PlayerInfo*)(peer->data))->currentWorld = "EXIT";
-								GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "Exit from what? Click back if you're done playing."));
+								GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "You can't go to EXIT!"));
 								ENetPacket * packet = enet_packet_create(p.data,
 									p.len,
 									ENET_PACKET_FLAG_RELIABLE);
@@ -4001,7 +4385,7 @@ int _tmain(int argc, _TCHAR* argv[])
 							}
 							else {
 								((PlayerInfo*)(peer->data))->currentWorld = "EXIT";
-								GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "I know this menu is magical and all, but it has its limitations! You can't visit this world!"));
+								GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "Unknown error while entering world!"));
 								ENetPacket * packet = enet_packet_create(p.data,
 									p.len,
 									ENET_PACKET_FLAG_RELIABLE);
@@ -4255,7 +4639,7 @@ int _tmain(int argc, _TCHAR* argv[])
 				if (currentPeer->state != ENET_PEER_STATE_CONNECTED)
 					continue;
 
-				GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "Player `o" + ((PlayerInfo*)(event.peer->data))->tankIDName + "`o just left the game..."));
+				GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "Player `o" + ((PlayerInfo*)(event.peer->data))->tankIDName + "`o just left game..."));
 				ENetPacket * packet = enet_packet_create(p.data,
 					p.len,
 					ENET_PACKET_FLAG_RELIABLE);

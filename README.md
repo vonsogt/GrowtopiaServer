@@ -1,7 +1,7 @@
 # Growtopia Server
 Original code By growtopianoobs
 Newcode by Jordan#0495
-Also some credit to Juranto
+Also some credit to  Juantlo
 
 This project has been compiled with Visual Studio 2015 (Visual Studio 2013 or older won't work!) and newer versions of VS or other compilers weren't been tested.
 

@@ -2,21 +2,17 @@
     First Growtopia Private Server made with ENet.
     Copyright (C) 2018  Growtopia Noobs
     Made by Jordan#0495
-
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
-
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU Affero General Public License for more details.
-
     You should have received a copy of the GNU Affero General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **********************************************************************************/
-
 
 #include "stdafx.h"
 #include <iostream>
@@ -517,7 +513,6 @@ struct WorldInfo {
 	WorldItem* items;
 	string owner = "";
 	bool isPublic=false;
-	int weather = 0;
 };
 
 WorldInfo generateWorld(string name, int width, int height)
@@ -806,7 +801,6 @@ void WorldDB::flush(WorldInfo info)
 	j["height"] = info.height;
 	j["owner"] = info.owner;
 	j["isPublic"] = info.isPublic;
-	j["weather"] = info.weather;
 	json tiles = json::array();
 	int square = info.width*info.height;
 	
@@ -2407,13 +2401,13 @@ int _tmain(int argc, _TCHAR* argv[])
 		}
 	}
 	//for example you should write like this other them addAdmin("username", "password", adminlvl); under of them vip - 1 mod - 2 admin - 999 dev - 1000
-	addAdmin("username", "password", 999);//fortesting ;)
+	addAdmin("username", "password", 1000);//fortesting ;)
 
 	//world = generateWorld();
 	worldDB.get("TEST");
 	worldDB.get("MAIN");
 	worldDB.get("NEW");
-	//worldDB.get("ADMIN");
+	worldDB.get("ADMIN");
 	worldDB.get("LEGEND");
 	ENetAddress address;
 	/* Bind the server to the default localhost.     */
@@ -3076,7 +3070,7 @@ int _tmain(int argc, _TCHAR* argv[])
 						((PlayerInfo*)(event.peer->data))->inventory = inventory;
 						{
 							string name = ((PlayerInfo*)(peer->data))->displayName;
-							GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnDialogRequest"), "set_default_color|`o\n\nadd_label_with_icon|big|`wAdministrator Help``|left|1796|\n\nadd_spacer|small|\n\nadd_textbox|`7Name : `w" + name + "|left|\n\nadd_spacer|small|\n\nadd_label_with_icon|small|`4COMMAND:`` /asb (Admin Super Boardcast)|left|5956|\n\nadd_spacer|small|\nadd_label_with_icon|small|`4COMMAND:`` /reset (Only use when the owner says to)|left|5956|\nadd_label_with_icon|small|`4COMMAND:`` /sdb (Super Duper Boardcast) `4*Disabled ``|left|5956|\nadd_spacer|small|\nadd_label_with_icon|small|`4COMMAND:`` /gsm (Global System Message)|left|5956||0|0|\nadd_spacer|small|\nadd_button|chc0|Close|noflags|0|0|\nadd_quick_exit|\nnend_dialog|gazette||OK|"));
+							GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnDialogRequest"), "set_default_color|`o\n\nadd_label_with_icon|big|`wAdministrator Help``|left|1796|\n\nadd_spacer|small|\n\nadd_textbox|`7Name : `w" + name + "|left|\n\nadd_spacer|small|\n\nadd_label_with_icon|small|`4COMMAND:`` /asb (Admin Super Boardcast)|left|5956|\n\nadd_spacer|small|\nadd_label_with_icon|small|`4COMMAND:`` /reset (Only use when the owner say to)|left|5956|\nadd_label_with_icon|small|`4COMMAND:`` /sdb (Super Duper Boardcast) `4*Disabled ``|left|5956|\nadd_spacer|small|\nadd_label_with_icon|small|`4COMMAND:`` /gsm (Global System Message)|left|5956||0|0|\nadd_spacer|small|\nadd_button|chc0|Close|noflags|0|0|\nadd_quick_exit|\nnend_dialog|gazette||OK|"));
 							ENetPacket * packet = enet_packet_create(p.data,
 								p.len,
 								ENET_PACKET_FLAG_RELIABLE);
@@ -3506,19 +3500,20 @@ int _tmain(int argc, _TCHAR* argv[])
 						continue;
 
 					}
-					else if (str.substr(0, 10) == "/weather ")
+					/*else if (str.substr(0, 10) == "/weather ")
+
 					{
-					GamePacket p = packetEnd(appendInt(appendString(createPacket(), "OnSetCurrentWeather"), world->weather));
-					ENetPacket * packet = enet_packet_create(p.data,
-						p.len,
-						ENET_PACKET_FLAG_RELIABLE);
+						GamePacket p = packetEnd(appendInt(appendString(createPacket(), "OnSetBaseWeather"), atoi(str.substr(10).c_str())));
+						ENetPacket * packet = enet_packet_create(p.data,
+							p.len,
+							ENET_PACKET_FLAG_RELIABLE);
 
-					enet_peer_send(peer, 0, packet);
-					delete p.data;
-					continue;
+						enet_peer_send(peer, 0, packet);
+						delete p.data;
+						continue;
 
-					}
-					else if (str.substr(0, 6) == "/drop ")
+					}*/
+					/*else if (str.substr(0, 6) == "/drop ")
 					{
 
 					//rl
@@ -3560,7 +3555,7 @@ int _tmain(int argc, _TCHAR* argv[])
 					sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? -4 : 4)), ((PlayerInfo*)(peer->data))->y + 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
 					sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? -5 : 5)), ((PlayerInfo*)(peer->data))->y + 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
 					sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? -5 : 5)), ((PlayerInfo*)(peer->data))->y + 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
-					}
+					}*/
 					else if (str == "/count"){
 						int count = 0;
 						ENetPeer * currentPeer;
@@ -4235,7 +4230,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 					{
 						//GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnDialogRequest"), "set_default_color|`o\n\nadd_label_with_icon|big|`wThe Growtopia Gazette``|left|5016|\n\nadd_spacer|small|\n\nadd_image_button|banner|interface/large/news_banner.rttex|noflags|||\n\nadd_spacer|small|\n\nadd_textbox|`wSeptember 10:`` `5Surgery Stars end!``|left|\n\nadd_spacer|small|\n\n\n\nadd_textbox|Hello Growtopians,|left|\n\nadd_spacer|small|\n\n\n\nadd_textbox|Surgery Stars is over! We hope you enjoyed it and claimed all your well-earned Summer Tokens!|left|\n\nadd_spacer|small|\n\nadd_spacer|small|\n\nadd_textbox|As we announced earlier, this month we are releasing the feature update a bit later, as we're working on something really cool for the monthly update and we're convinced that the wait will be worth it!|left|\n\nadd_spacer|small|\n\nadd_textbox|Check the Forum here for more information!|left|\n\nadd_spacer|small|\n\nadd_url_button|comment|`wSeptember Updates Delay``|noflags|https://www.growtopiagame.com/forums/showthread.php?510657-September-Update-Delay&p=3747656|Open September Update Delay Announcement?|0|0|\n\nadd_spacer|small|\n\nadd_spacer|small|\n\nadd_textbox|Also, we're glad to invite you to take part in our official Growtopia survey!|left|\n\nadd_spacer|small|\n\nadd_url_button|comment|`wTake Survey!``|noflags|https://ubisoft.ca1.qualtrics.com/jfe/form/SV_1UrCEhjMO7TKXpr?GID=26674|Open the browser to take the survey?|0|0|\n\nadd_spacer|small|\n\nadd_textbox|Click on the button above and complete the survey to contribute your opinion to the game and make Growtopia even better! Thanks in advance for taking the time, we're looking forward to reading your feedback!|left|\n\nadd_spacer|small|\n\nadd_spacer|small|\n\nadd_textbox|And for those who missed PAW, we made a special video sneak peek from the latest PAW fashion show, check it out on our official YouTube channel! Yay!|left|\n\nadd_spacer|small|\n\nadd_url_button|comment|`wPAW 2018 Fashion Show``|noflags|https://www.youtube.com/watch?v=5i0IcqwD3MI&feature=youtu.be|Open the Growtopia YouTube channel for videos and tutorials?|0|0|\n\nadd_spacer|small|\n\nadd_textbox|Lastly, check out other September updates:|left|\n\nadd_spacer|small|\n\nadd_label_with_icon|small|IOTM: The Sorcerer's Tunic of Mystery|left|24|\n\nadd_label_with_icon|small|New Legendary Summer Clash Branch|left|24|\n\nadd_spacer|small|\n\nadd_textbox|`$- The Growtopia Team``|left|\n\nadd_spacer|small|\n\nadd_spacer|small|\n\n\n\n\n\nadd_url_button|comment|`wOfficial YouTube Channel``|noflags|https://www.youtube.com/c/GrowtopiaOfficial|Open the Growtopia YouTube channel for videos and tutorials?|0|0|\n\nadd_url_button|comment|`wSeptember's IOTM: `8Sorcerer's Tunic of Mystery!````|noflags|https://www.growtopiagame.com/forums/showthread.php?450065-Item-of-the-Month&p=3392991&viewfull=1#post3392991|Open the Growtopia website to see item of the month info?|0|0|\n\nadd_spacer|small|\n\nadd_label_with_icon|small|`4WARNING:`` `5Drop games/trust tests`` and betting games (like `5Casinos``) are not allowed and will result in a ban!|left|24|\n\nadd_label_with_icon|small|`4WARNING:`` Using any kind of `5hacked client``, `5spamming/text pasting``, or `5bots`` (even with an alt) will likely result in losing `5ALL`` your accounts. Seriously.|left|24|\n\nadd_label_with_icon|small|`4WARNING:`` `5NEVER enter your GT password on a website (fake moderator apps, free gemz, etc) - it doesn't work and you'll lose all your stuff!|left|24|\n\nadd_spacer|small|\n\nadd_url_button|comment|`wGrowtopia on Facebook``|noflags|http://growtopiagame.com/facebook|Open the Growtopia Facebook page in your browser?|0|0|\n\nadd_spacer|small|\n\nadd_button|rules|`wHelp - Rules - Privacy Policy``|noflags|0|0|\n\n\nadd_quick_exit|\n\nadd_spacer|small|\nadd_url_button|comment|`wVisit Growtopia Forums``|noflags|http://www.growtopiagame.com/forums|Visit the Growtopia forums?|0|0|\nadd_spacer|small|\nadd_url_button||`wWOTD: `1THELOSTGOLD`` by `#iWasToD````|NOFLAGS|OPENWORLD|THELOSTGOLD|0|0|\nadd_spacer|small|\nadd_url_button||`wVOTW: `1Yodeling Kid - Growtopia Animation``|NOFLAGS|https://www.youtube.com/watch?v=UMoGmnFvc58|Watch 'Yodeling Kid - Growtopia Animation' by HyerS on YouTube?|0|0|\nend_dialog|gazette||OK|"));
-						GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnDialogRequest"), "set_default_color|`o\n\nadd_label_with_icon|big|`wProject Command``|left|5016||\n\nadd_spacer|small|\n\nadd_label_with_icon|small|`2UPDATES:`` `wFixed Crash Bug|left|112|\nadd_label_with_icon|small|`4WARNING:`` `5Worlds (and accounts)`` might be deleted at any time if database issues appear (once per week).|left|780|\nadd_label_with_icon|small|`4WARNING:`` `5Accounts`` are in beta, bugs may appear and they will be probably deleted often, because of new account updates, which will cause database incompatibility.|left|780|\nadd_spacer|small|\n\nadd_url_button||``Youtube: `1Developer's Channel``|NOFLAGS|https://www.youtube.com/nitespicy|Open link?|0|0|\nadd_url_button||``Discord: `1Server Discord``|NOFLAGS|https://discord.gg/kkZtp3Q|Open link?|0|0|\nadd_url_button||``Items: `1Item database by Nenkai``|NOFLAGS|https://raw.githubusercontent.com/Nenkai/GrowtopiaItemDatabase/master/GrowtopiaItemDatabase/CoreData.txt|Open link?|0|0|\nadd_textbox|Server IP : 103.91.204.176|small|\nadd_textbox|Growtopia TH version 2.000|small|\nadd_quick_exit|\nend_dialog|gazette||OK|"));
+						GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnDialogRequest"), "set_default_color|`o\n\nadd_label_with_icon|big|`wProject Command``|left|5016||\n\nadd_spacer|small|\n\nadd_label_with_icon|small|`2UPDATES:`` `wFixed Crash Bug|left|112|\nadd_label_with_icon|small|`4WARNING:`` `5Worlds (and accounts)`` might be deleted at any time if database issues appear (once per week).|left|780|\nadd_label_with_icon|small|`4WARNING:`` `5Accounts`` are in beta, bugs may appear and they will be probably deleted often, because of new account updates, which will cause database incompatibility.|left|780|\nadd_spacer|small|\n\nadd_url_button||``Youtube: `1Developer's Channel``|NOFLAGS|https://www.youtube.com/jcarter1060|Open link?|0|0|\nadd_url_button||``Discord: `1Server Discord``|NOFLAGS|https://discord.gg/kkZtp3Q|Open link?|0|0|\nadd_url_button||``Items: `1Item database by Nenkai``|NOFLAGS|https://raw.githubusercontent.com/Nenkai/GrowtopiaItemDatabase/master/GrowtopiaItemDatabase/CoreData.txt|Open link?|0|0|\nadd_textbox|Server IP : 103.91.204.176|small|\nadd_textbox|Growtopia TH version 2.000|small|\nadd_quick_exit|\nend_dialog|gazette||OK|"));
 						ENetPacket * packet = enet_packet_create(p.data,
 							p.len,
 							ENET_PACKET_FLAG_RELIABLE);

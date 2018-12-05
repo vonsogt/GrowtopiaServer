@@ -1,9 +1,22 @@
+/**********************************************************************************
+    First Growtopia Private Server made with ENet.
+    Copyright (C) 2018  Growtopia Noobs
+    Made by Jordan#0495
 
-/*
-Original Source Code By Growtopia Noobs
-Alot of commands added by Jordan#0495
-credit to nitespicy
-*/
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published
+    by the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+**********************************************************************************/
+
 
 #include "stdafx.h"
 #include <iostream>
@@ -504,6 +517,7 @@ struct WorldInfo {
 	WorldItem* items;
 	string owner = "";
 	bool isPublic=false;
+	int weather = 0;
 };
 
 WorldInfo generateWorld(string name, int width, int height)
@@ -792,6 +806,7 @@ void WorldDB::flush(WorldInfo info)
 	j["height"] = info.height;
 	j["owner"] = info.owner;
 	j["isPublic"] = info.isPublic;
+	j["weather"] = info.weather;
 	json tiles = json::array();
 	int square = info.width*info.height;
 	
@@ -2391,14 +2406,14 @@ int _tmain(int argc, _TCHAR* argv[])
 			cout << "Updating items data failed!" << endl;
 		}
 	}
-	//for example @Later you should write like this other them addAdmin("username", "password", adminlvl); under of them vip - 1 mod - 2 admin - 999 dev - 1000
+	//for example you should write like this other them addAdmin("username", "password", adminlvl); under of them vip - 1 mod - 2 admin - 999 dev - 1000
 	addAdmin("username", "password", 999);//fortesting ;)
 
 	//world = generateWorld();
 	worldDB.get("TEST");
 	worldDB.get("MAIN");
 	worldDB.get("NEW");
-	worldDB.get("ADMIN");
+	//worldDB.get("ADMIN");
 	worldDB.get("LEGEND");
 	ENetAddress address;
 	/* Bind the server to the default localhost.     */
@@ -3061,7 +3076,7 @@ int _tmain(int argc, _TCHAR* argv[])
 						((PlayerInfo*)(event.peer->data))->inventory = inventory;
 						{
 							string name = ((PlayerInfo*)(peer->data))->displayName;
-							GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnDialogRequest"), "set_default_color|`o\n\nadd_label_with_icon|big|`wAdministrator Help``|left|1796|\n\nadd_spacer|small|\n\nadd_textbox|`7Name : `w" + name + "|left|\n\nadd_spacer|small|\n\nadd_label_with_icon|small|`4COMMAND:`` /asb (Admin Super Boardcast)|left|5956|\n\nadd_spacer|small|\nadd_label_with_icon|small|`4COMMAND:`` /reset (Use when the owener tells you to.)|left|5956|\nadd_label_with_icon|small|`4COMMAND:`` /sdb (Super Duper Boardcast) `4*Disabled ``|left|5956|\nadd_spacer|small|\nadd_label_with_icon|small|`4COMMAND:`` /gsm (Global System Message)|left|5956||0|0|\nadd_spacer|small|\nadd_button|chc0|Close|noflags|0|0|\nadd_quick_exit|\nnend_dialog|gazette||OK|"));
+							GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnDialogRequest"), "set_default_color|`o\n\nadd_label_with_icon|big|`wAdministrator Help``|left|1796|\n\nadd_spacer|small|\n\nadd_textbox|`7Name : `w" + name + "|left|\n\nadd_spacer|small|\n\nadd_label_with_icon|small|`4COMMAND:`` /asb (Admin Super Boardcast)|left|5956|\n\nadd_spacer|small|\nadd_label_with_icon|small|`4COMMAND:`` /reset (Only use when the owner says to)|left|5956|\nadd_label_with_icon|small|`4COMMAND:`` /sdb (Super Duper Boardcast) `4*Disabled ``|left|5956|\nadd_spacer|small|\nadd_label_with_icon|small|`4COMMAND:`` /gsm (Global System Message)|left|5956||0|0|\nadd_spacer|small|\nadd_button|chc0|Close|noflags|0|0|\nadd_quick_exit|\nnend_dialog|gazette||OK|"));
 							ENetPacket * packet = enet_packet_create(p.data,
 								p.len,
 								ENET_PACKET_FLAG_RELIABLE);
@@ -3491,20 +3506,19 @@ int _tmain(int argc, _TCHAR* argv[])
 						continue;
 
 					}
-					/*else if (str.substr(0, 10) == "/weather ")
-
+					else if (str.substr(0, 10) == "/weather ")
 					{
-						GamePacket p = packetEnd(appendInt(appendString(createPacket(), "OnSetBaseWeather"), atoi(str.substr(10).c_str())));
-						ENetPacket * packet = enet_packet_create(p.data,
-							p.len,
-							ENET_PACKET_FLAG_RELIABLE);
+					GamePacket p = packetEnd(appendInt(appendString(createPacket(), "OnSetCurrentWeather"), world->weather));
+					ENetPacket * packet = enet_packet_create(p.data,
+						p.len,
+						ENET_PACKET_FLAG_RELIABLE);
 
-						enet_peer_send(peer, 0, packet);
-						delete p.data;
-						continue;
+					enet_peer_send(peer, 0, packet);
+					delete p.data;
+					continue;
 
-					}*/
-					/*else if (str.substr(0, 6) == "/drop ")
+					}
+					else if (str.substr(0, 6) == "/drop ")
 					{
 
 					//rl
@@ -3546,7 +3560,7 @@ int _tmain(int argc, _TCHAR* argv[])
 					sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? -4 : 4)), ((PlayerInfo*)(peer->data))->y + 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
 					sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? -5 : 5)), ((PlayerInfo*)(peer->data))->y + 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
 					sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft ? -5 : 5)), ((PlayerInfo*)(peer->data))->y + 32, atoi(str.substr(6, cch.length() - 6 - 1).c_str()), 1, 0);
-					}*/
+					}
 					else if (str == "/count"){
 						int count = 0;
 						ENetPeer * currentPeer;
@@ -4193,8 +4207,9 @@ int _tmain(int argc, _TCHAR* argv[])
 						count++;
 					}
 					string name = ((PlayerInfo*)(peer->data))->displayName;
-					GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "Server made by `bJordan `o( Jordan#0495 )"));
+					GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "Server made by `4War `o( War#4671 ) and `bJordan `o( Jordan#0495 )"));
 					GamePacket p2 = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "Original open source code by `rGrowtopia Noobs"));
+					GamePacket p3 = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "Discord Owner : `2LaTer `o( LaTer#4307 )"));
 					GamePacket p4 = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "Welcome back, `w" + name + "`o. No friends are online."));
 					GamePacket p5 = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "Where would you like to go? (`w" + std::to_string(count) + " `oonline)"));
 					ENetPacket * packet = enet_packet_create(p.data, p.len, ENET_PACKET_FLAG_RELIABLE);
